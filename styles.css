@@ -1088,3 +1088,40 @@ input[type="text"]:focus {
         padding: 1rem;
     }
 }
+
+/* Countdown styling for answer reveal */
+#reveal-countdown, #timeout-reveal-countdown {
+    display: inline-block;
+    background: linear-gradient(135deg, #3B82F6, #1E40AF);
+    color: white;
+    font-weight: bold;
+    font-size: 1.2em;
+    padding: 0.3rem 0.6rem;
+    border-radius: 50%;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    line-height: 1.9rem;
+    text-align: center;
+    animation: pulse 1s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+    50% { 
+        transform: scale(1.1); 
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+    }
+}
+
+#participant-feedback {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    backdrop-filter: blur(10px);
+}

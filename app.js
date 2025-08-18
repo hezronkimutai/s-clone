@@ -839,6 +839,38 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
                 opt.style.opacity = '0.6';
             });
             showToast('Time\'s up!', 'warning');
+            
+            // Show timeout feedback with countdown before revealing answer
+            const feedbackDiv = document.getElementById('participant-feedback');
+            feedbackDiv.innerHTML = `
+                <div style="text-align: center; padding: 1rem;">
+                    <h4>⏰ Time's Up!</h4>
+                    <p>Revealing correct answer in <span id="timeout-reveal-countdown">3</span> seconds...</p>
+                </div>
+            `;
+            showElement('participant-feedback');
+
+            // Start countdown before revealing the correct answer
+            let countdown = 3;
+            const countdownElement = document.getElementById('timeout-reveal-countdown');
+            
+            const revealTimer = setInterval(() => {
+                countdown--;
+                if (countdownElement) {
+                    countdownElement.textContent = countdown;
+                }
+                
+                if (countdown <= 0) {
+                    clearInterval(revealTimer);
+                    // Now show the correct answer
+                    feedbackDiv.innerHTML = `
+                        <div style="text-align: center; padding: 1rem;">
+                            <h4>⏰ Time's Up!</h4>
+                            <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
+                        </div>
+                    `;
+                }
+            }, 1000);
         });
     } else {
         console.log('Question not shown - same index:', questionIndex);
@@ -866,23 +898,45 @@ function submitAnswer(answerIndex) {
         return database.ref(`sessions/${currentSession}/participants/${currentUser.id}/score`).set(newScore);
     });
 
-    // Show feedback
-    const feedbackDiv = document.getElementById('participant-feedback');
-    feedbackDiv.innerHTML = `
-        <div style="text-align: center; padding: 1rem;">
-            <h4>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h4>
-            <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
-        </div>
-    `;
-    showElement('participant-feedback');
-
-    // Disable all options
+    // Disable all options immediately
     document.querySelectorAll('#participant-options .answer-option').forEach(opt => {
         opt.style.pointerEvents = 'none';
         if (opt.classList.contains('selected')) {
             opt.classList.add(isCorrect ? 'correct' : 'incorrect');
         }
     });
+
+    // Show initial feedback without correct answer
+    const feedbackDiv = document.getElementById('participant-feedback');
+    feedbackDiv.innerHTML = `
+        <div style="text-align: center; padding: 1rem;">
+            <h4>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h4>
+            <p>Revealing correct answer in <span id="reveal-countdown">3</span> seconds...</p>
+        </div>
+    `;
+    showElement('participant-feedback');
+
+    // Start countdown before revealing the correct answer
+    let countdown = 3;
+    const countdownElement = document.getElementById('reveal-countdown');
+    
+    const revealTimer = setInterval(() => {
+        countdown--;
+        if (countdownElement) {
+            countdownElement.textContent = countdown;
+        }
+        
+        if (countdown <= 0) {
+            clearInterval(revealTimer);
+            // Now show the correct answer
+            feedbackDiv.innerHTML = `
+                <div style="text-align: center; padding: 1rem;">
+                    <h4>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h4>
+                    <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
+                </div>
+            `;
+        }
+    }, 1000);
 }
 
 function showParticipantResults() {
