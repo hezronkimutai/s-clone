@@ -836,7 +836,7 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
             // Time's up - disable options
             optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
                 opt.style.pointerEvents = 'none';
-                opt.style.opacity = '0.6';
+                opt.style.opacity = '0.7'; // Just dim them, don't show colors yet
             });
             showToast('Time\'s up!', 'warning');
             
@@ -862,6 +862,12 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
                 
                 if (countdown <= 0) {
                     clearInterval(revealTimer);
+                    
+                    // Restore full opacity to options
+                    optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
+                        opt.style.opacity = '1';
+                    });
+                    
                     // Now show the correct answer
                     feedbackDiv.innerHTML = `
                         <div style="text-align: center; padding: 1rem;">
@@ -898,20 +904,18 @@ function submitAnswer(answerIndex) {
         return database.ref(`sessions/${currentSession}/participants/${currentUser.id}/score`).set(newScore);
     });
 
-    // Disable all options immediately
+    // Disable all options immediately but DON'T show colors yet
     document.querySelectorAll('#participant-options .answer-option').forEach(opt => {
         opt.style.pointerEvents = 'none';
-        if (opt.classList.contains('selected')) {
-            opt.classList.add(isCorrect ? 'correct' : 'incorrect');
-        }
+        opt.style.opacity = '0.7'; // Just dim them slightly to show they're disabled
     });
 
-    // Show initial feedback without correct answer
+    // Show only the countdown without revealing if answer is correct/incorrect
     const feedbackDiv = document.getElementById('participant-feedback');
     feedbackDiv.innerHTML = `
         <div style="text-align: center; padding: 1rem;">
-            <h4>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h4>
-            <p>Revealing correct answer in <span id="reveal-countdown">3</span> seconds...</p>
+            <h4>📝 Answer Submitted</h4>
+            <p>Revealing results in <span id="reveal-countdown">3</span> seconds...</p>
         </div>
     `;
     showElement('participant-feedback');
@@ -928,7 +932,16 @@ function submitAnswer(answerIndex) {
         
         if (countdown <= 0) {
             clearInterval(revealTimer);
-            // Now show the correct answer
+            
+            // NOW show the colors on the selected option
+            document.querySelectorAll('#participant-options .answer-option').forEach(opt => {
+                if (opt.classList.contains('selected')) {
+                    opt.classList.add(isCorrect ? 'correct' : 'incorrect');
+                }
+                opt.style.opacity = '1'; // Restore full opacity
+            });
+            
+            // NOW show the feedback with correct/incorrect status
             feedbackDiv.innerHTML = `
                 <div style="text-align: center; padding: 1rem;">
                     <h4>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h4>
