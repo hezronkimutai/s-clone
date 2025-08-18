@@ -21,9 +21,39 @@ database.ref(`sessions/${sessionCode}/participants`).on('value', (snapshot) => {
 **Structure**: Separated concerns for session management, UI updates, and Firebase operations
 **Benefits**: Maintainable code, clear separation of responsibilities
 
-### 4. Event-Driven Architecture
-**Implementation**: DOM event listeners and Firebase event handlers
-**Flow**: User Action → Event Handler → State Update → UI Refresh
+### 4. Dynamic Template Generation Pattern
+**Implementation**: Template literal-based DOM creation for quiz items
+```javascript
+quizItem.innerHTML = `
+    <div class="quiz-title">Quiz by ${session.host}</div>
+    <div class="quiz-details">
+        <span>👥 ${participantCount} participants • ❓ ${questionCount} questions</span>
+        <span class="quiz-status ${statusClass}">${statusText}</span>
+    </div>
+`;
+```
+**Benefits**: Dynamic content generation, maintainable templates, efficient DOM updates
+
+### 5. Progressive Enhancement Pattern
+**Implementation**: Modern browser features with graceful fallbacks
+```javascript
+// Modern Clipboard API with fallback
+if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text)
+} else {
+    fallbackCopyTextToClipboard(text)
+}
+```
+**Benefits**: Consistent experience across all browser versions
+
+### 6. URL Parameter Routing Pattern
+**Implementation**: URLSearchParams for deep linking and auto-join functionality
+```javascript
+const urlParams = new URLSearchParams(window.location.search);
+const quizId = urlParams.get('quiz');
+if (quizId) joinQuizById(quizId);
+```
+**Benefits**: Shareable quiz links, improved user experience, SEO-friendly URLs
 
 ## Communication Patterns
 

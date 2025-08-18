@@ -4,154 +4,216 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memory Bank - Quiz Master</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css">
     <style>
         .memory-bank-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            color: #F1F5F9;
         }
 
         .memory-nav {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 30px;
             padding: 20px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .memory-nav button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            background: #667eea;
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
             color: white;
-            border-radius: 5px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
         }
 
         .memory-nav button:hover {
-            background: #764ba2;
+            background: linear-gradient(135deg, #0891B2, #2563EB);
             transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
         }
 
         .memory-nav button.active {
-            background: #764ba2;
-            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+            background: linear-gradient(135deg, #10B981, #059669);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
         }
 
         .memory-content {
-            background: white;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             min-height: 500px;
         }
 
         .memory-content h1,
         .memory-content h2,
         .memory-content h3 {
-            color: #333;
-            margin-bottom: 15px;
+            color: #F1F5F9;
+            margin-bottom: 20px;
         }
 
         .memory-content h1 {
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 10px;
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border-bottom: 2px solid rgba(6, 182, 212, 0.3);
+            padding-bottom: 15px;
+            font-weight: 800;
         }
 
         .memory-content h2 {
-            color: #764ba2;
-            margin-top: 25px;
+            color: #10B981;
+            margin-top: 30px;
+            font-weight: 700;
+        }
+
+        .memory-content h3 {
+            color: #F59E0B;
+            font-weight: 600;
         }
 
         .memory-content ul,
         .memory-content ol {
-            margin-left: 20px;
-            margin-bottom: 15px;
+            margin-left: 25px;
+            margin-bottom: 20px;
         }
 
         .memory-content li {
-            margin-bottom: 5px;
-            line-height: 1.6;
+            margin-bottom: 8px;
+            line-height: 1.7;
+            color: #CBD5E1;
         }
 
         .memory-content p {
-            line-height: 1.6;
-            margin-bottom: 15px;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            color: #CBD5E1;
         }
 
         .memory-content code {
-            background: #f4f4f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
+            background: rgba(6, 182, 212, 0.1);
+            color: #06B6D4;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-weight: 500;
+            border: 1px solid rgba(6, 182, 212, 0.2);
         }
 
         .memory-content pre {
-            background: #f4f4f4;
-            padding: 15px;
-            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
             overflow-x: auto;
-            margin: 15px 0;
+            margin: 20px 0;
+            color: #E2E8F0;
+        }
+
+        .memory-content pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #E2E8F0;
         }
 
         .status-indicator {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-            margin-left: 10px;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 700;
+            margin-left: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-completed {
-            background: #d4edda;
-            color: #155724;
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
 
         .status-progress {
-            background: #fff3cd;
-            color: #856404;
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            color: white;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
         }
 
         .status-pending {
-            background: #f8d7da;
-            color: #721c24;
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+            color: white;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
         }
 
         .back-to-app {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: #667eea;
+            background: linear-gradient(135deg, #06B6D4, #3B82F6);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: 25px;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+            backdrop-filter: blur(10px);
         }
 
         .back-to-app:hover {
-            background: #764ba2;
+            background: linear-gradient(135deg, #0891B2, #2563EB);
             transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
         }
 
         .search-box {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
             font-size: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #F1F5F9;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .search-box::placeholder {
+            color: #94A3B8;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #06B6D4;
+            box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);
         }
 
         .search-box:focus {
