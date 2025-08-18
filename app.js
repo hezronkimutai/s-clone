@@ -833,50 +833,48 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
         console.log('Starting participant timer');
         startTimer(20, 'participant-timer', () => {
             console.log('Participant timer finished');
-            // Time's up - disable options
+            
+            // Time's up - disable options if not already disabled
             optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
                 opt.style.pointerEvents = 'none';
-                opt.style.opacity = '0.7'; // Just dim them, don't show colors yet
+                opt.style.opacity = '1'; // Restore full opacity for final reveal
             });
-            showToast('Time\'s up!', 'warning');
             
-            // Show timeout feedback with countdown before revealing answer
             const feedbackDiv = document.getElementById('participant-feedback');
-            feedbackDiv.innerHTML = `
-                <div style="text-align: center; padding: 1rem;">
-                    <h4>⏰ Time's Up!</h4>
-                    <p>Revealing correct answer in <span id="timeout-reveal-countdown">3</span> seconds...</p>
-                </div>
-            `;
-            showElement('participant-feedback');
-
-            // Start countdown before revealing the correct answer
-            let countdown = 3;
-            const countdownElement = document.getElementById('timeout-reveal-countdown');
             
-            const revealTimer = setInterval(() => {
-                countdown--;
-                if (countdownElement) {
-                    countdownElement.textContent = countdown;
-                }
+            // Check if user submitted an answer
+            if (window.submittedAnswer) {
+                const { answerIndex, isCorrect } = window.submittedAnswer;
                 
-                if (countdown <= 0) {
-                    clearInterval(revealTimer);
-                    
-                    // Restore full opacity to options
-                    optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
-                        opt.style.opacity = '1';
-                    });
-                    
-                    // Now show the correct answer
-                    feedbackDiv.innerHTML = `
-                        <div style="text-align: center; padding: 1rem;">
-                            <h4>⏰ Time's Up!</h4>
-                            <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
-                        </div>
-                    `;
-                }
-            }, 1000);
+                // Show colors on the selected option
+                document.querySelectorAll('#participant-options .answer-option').forEach(opt => {
+                    if (opt.classList.contains('selected')) {
+                        opt.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    }
+                });
+                
+                // Show feedback with user's result
+                feedbackDiv.innerHTML = `
+                    <div style="text-align: center; padding: 1rem;">
+                        <h4>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h4>
+                        <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
+                    </div>
+                `;
+                
+                // Clear the stored answer
+                window.submittedAnswer = null;
+            } else {
+                // No answer was submitted - time's up
+                feedbackDiv.innerHTML = `
+                    <div style="text-align: center; padding: 1rem;">
+                        <h4>⏰ Time's Up!</h4>
+                        <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
+                    </div>
+                `;
+                showElement('participant-feedback');
+            }
+            
+            showToast('Time\'s up!', 'warning');
         });
     } else {
         console.log('Question not shown - same index:', questionIndex);
@@ -884,7 +882,8 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
 }
 
 function submitAnswer(answerIndex) {
-    stopTimer();
+    // DON'T stop the timer - let it continue running
+    // stopTimer(); // Remove this line
 
     // Calculate score
     const isCorrect = answerIndex === questions[currentQuestionIndex].correct;
@@ -910,46 +909,21 @@ function submitAnswer(answerIndex) {
         opt.style.opacity = '0.7'; // Just dim them slightly to show they're disabled
     });
 
-    // Show only the countdown without revealing if answer is correct/incorrect
+    // Show only that answer was submitted - let the main timer continue
     const feedbackDiv = document.getElementById('participant-feedback');
     feedbackDiv.innerHTML = `
         <div style="text-align: center; padding: 1rem;">
             <h4>📝 Answer Submitted</h4>
-            <p>Revealing results in <span id="reveal-countdown">3</span> seconds...</p>
+            <p>Results will be revealed when time is up...</p>
         </div>
     `;
     showElement('participant-feedback');
 
-    // Start countdown before revealing the correct answer
-    let countdown = 3;
-    const countdownElement = document.getElementById('reveal-countdown');
-    
-    const revealTimer = setInterval(() => {
-        countdown--;
-        if (countdownElement) {
-            countdownElement.textContent = countdown;
-        }
-        
-        if (countdown <= 0) {
-            clearInterval(revealTimer);
-            
-            // NOW show the colors on the selected option
-            document.querySelectorAll('#participant-options .answer-option').forEach(opt => {
-                if (opt.classList.contains('selected')) {
-                    opt.classList.add(isCorrect ? 'correct' : 'incorrect');
-                }
-                opt.style.opacity = '1'; // Restore full opacity
-            });
-            
-            // NOW show the feedback with correct/incorrect status
-            feedbackDiv.innerHTML = `
-                <div style="text-align: center; padding: 1rem;">
-                    <h4>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h4>
-                    <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
-                </div>
-            `;
-        }
-    }, 1000);
+    // Store the answer data for when the timer finishes
+    window.submittedAnswer = {
+        answerIndex: answerIndex,
+        isCorrect: isCorrect
+    };
 }
 
 function showParticipantResults() {
