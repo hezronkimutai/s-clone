@@ -1053,6 +1053,22 @@ input[type="text"]:focus {
         width: 100%;
         max-width: 300px;
     }
+    
+    .question-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .toast {
+        min-width: auto;
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1070,22 +1086,5 @@ input[type="text"]:focus {
     
     .quiz-item {
         padding: 1rem;
-    }
-}
-    
-    .question-header {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .toast-container {
-        top: 10px;
-        right: 10px;
-        left: 10px;
-    }
-    
-    .toast {
-        min-width: auto;
-        width: 100%;
     }
 }
