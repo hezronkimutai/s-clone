@@ -260,23 +260,113 @@ document.getElementById('create-quiz-btn').addEventListener('click', () => {
     showScreen('create');
 });
 
-document.getElementById('join-quiz-btn').addEventListener('click', () => {
-    const code = document.getElementById('quiz-code-input').value.trim().toUpperCase();
-    if (code.length === 6) {
-        // Check if session exists
-        database.ref('sessions/' + code).once('value').then(snapshot => {
-            if (snapshot.exists()) {
-                currentSession = code;
-                showScreen('join');
-                document.getElementById('participant-session-code').textContent = code;
-            } else {
-                showToast('Quiz session not found! Please check the code and try again.', 'error', 'Session Not Found');
-            }
-        });
-    } else {
-        showToast('Please enter a valid 6-character code', 'warning', 'Invalid Code');
-    }
+// Load available quizzes when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadAvailableQuizzes();
 });
+
+// Refresh quizzes button
+document.getElementById('refresh-quizzes-btn').addEventListener('click', () => {
+    loadAvailableQuizzes();
+});
+
+// Function to load and display available quizzes
+function loadAvailableQuizzes() {
+    const quizList = document.getElementById('available-quizzes');
+    quizList.innerHTML = '<div class="loading-message">Loading available quizzes...</div>';
+    
+    database.ref('sessions').once('value').then(snapshot => {
+        const sessions = snapshot.val();
+        quizList.innerHTML = '';
+        
+        if (!sessions) {
+            quizList.innerHTML = '<div class="no-quizzes-message">No active quizzes found. Create one to get started!</div>';
+            return;
+        }
+        
+        const activeQuizzes = Object.keys(sessions)
+            .filter(sessionId => {
+                const session = sessions[sessionId];
+                return session.status === 'waiting' || session.status === 'active';
+            })
+            .sort((a, b) => {
+                // Sort by creation time, newest first
+                const timeA = sessions[a].createdAt || 0;
+                const timeB = sessions[b].createdAt || 0;
+                return timeB - timeA;
+            });
+        
+        if (activeQuizzes.length === 0) {
+            quizList.innerHTML = '<div class="no-quizzes-message">No active quizzes found. Create one to get started!</div>';
+            return;
+        }
+        
+        activeQuizzes.forEach(sessionId => {
+            const session = sessions[sessionId];
+            const quizItem = createQuizItem(sessionId, session);
+            quizList.appendChild(quizItem);
+        });
+    }).catch(error => {
+        console.error('Error loading quizzes:', error);
+        quizList.innerHTML = '<div class="no-quizzes-message">Error loading quizzes. Please try again.</div>';
+    });
+}
+
+// Function to create a quiz item element
+function createQuizItem(sessionId, session) {
+    const quizItem = document.createElement('div');
+    quizItem.className = 'quiz-item';
+    quizItem.onclick = () => joinQuizById(sessionId);
+    
+    const participantCount = session.participants ? Object.keys(session.participants).length : 0;
+    const questionCount = session.questions ? session.questions.length : 0;
+    
+    const statusClass = {
+        'waiting': 'status-waiting',
+        'active': 'status-active',
+        'completed': 'status-completed'
+    }[session.status] || 'status-waiting';
+    
+    const statusText = {
+        'waiting': 'Waiting for participants',
+        'active': 'Quiz in progress',
+        'completed': 'Completed'
+    }[session.status] || 'Unknown';
+    
+    quizItem.innerHTML = `
+        <div class="quiz-title">Quiz by ${session.host || 'Unknown Host'}</div>
+        <div class="quiz-details">
+            <span>👥 ${participantCount} participants • ❓ ${questionCount} questions</span>
+            <span class="quiz-status ${statusClass}">${statusText}</span>
+        </div>
+    `;
+    
+    return quizItem;
+}
+
+// Function to join a quiz by ID
+function joinQuizById(sessionId) {
+    // Check if session still exists and is joinable
+    database.ref('sessions/' + sessionId).once('value').then(snapshot => {
+        if (snapshot.exists()) {
+            const session = snapshot.val();
+            if (session.status === 'waiting' || session.status === 'active') {
+                currentSession = sessionId;
+                showScreen('join');
+                document.getElementById('participant-session-code').textContent = sessionId;
+            } else {
+                showToast('This quiz is no longer accepting participants.', 'warning', 'Quiz Unavailable');
+                loadAvailableQuizzes(); // Refresh the list
+            }
+        } else {
+            showToast('Quiz session no longer exists.', 'error', 'Session Not Found');
+            loadAvailableQuizzes(); // Refresh the list
+        }
+    }).catch(error => {
+        console.error('Error joining quiz:', error);
+        showToast('Error joining quiz. Please try again.', 'error', 'Connection Error');
+    });
+}
 
 document.getElementById('back-to-home-btn').addEventListener('click', () => {
     showScreen('home');
@@ -325,6 +415,11 @@ document.getElementById('start-quiz-btn').addEventListener('click', () => {
         }).then(() => {
             if (currentSession) {
                 document.getElementById('session-code').textContent = currentSession;
+                
+                // Generate and display share link
+                const shareUrl = `${window.location.origin}${window.location.pathname}?quiz=${currentSession}`;
+                document.getElementById('quiz-share-url').textContent = shareUrl;
+                
                 showScreen('hostDashboard');
                 showToast(`Quiz created successfully! Share code: ${currentSession}`, 'success', 'Quiz Ready');
                 setupHostListeners();
@@ -870,7 +965,17 @@ screens.questions = document.getElementById('questions-screen');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    showScreen('home');
+    // Check for quiz parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const quizId = urlParams.get('quiz');
+    
+    if (quizId) {
+        // Auto-join quiz if URL parameter is present
+        joinQuizById(quizId);
+    } else {
+        showScreen('home');
+    }
+    
     // Load questions on app start
     loadQuestionsFromFirebase().then(() => {
         console.log('Initial questions loaded:', questions.length);
@@ -880,3 +985,60 @@ document.addEventListener('DOMContentLoaded', () => {
         questions = [...defaultQuestions];
     });
 });
+
+// Copy link functionality
+document.getElementById('copy-link-btn').addEventListener('click', () => {
+    const shareUrl = document.getElementById('quiz-share-url').textContent;
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        // Use modern clipboard API
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            showToast('Quiz link copied to clipboard!', 'success', 'Link Copied');
+            
+            // Visual feedback
+            const btn = document.getElementById('copy-link-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Copied!';
+            btn.style.background = '#28a745';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            fallbackCopyTextToClipboard(shareUrl);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyTextToClipboard(shareUrl);
+    }
+});
+
+// Fallback copy function for older browsers
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showToast('Quiz link copied to clipboard!', 'success', 'Link Copied');
+        } else {
+            showToast('Failed to copy link. Please copy it manually.', 'error', 'Copy Failed');
+        }
+    } catch (err) {
+        console.error('Fallback: Could not copy text: ', err);
+        showToast('Failed to copy link. Please copy it manually.', 'error', 'Copy Failed');
+    }
+    
+    document.body.removeChild(textArea);
+}

@@ -17,8 +17,14 @@
                 <div class="home-options">
                     <button id="create-quiz-btn" class="btn primary">Create Quiz</button>
                     <div class="join-section">
-                        <input type="text" id="quiz-code-input" placeholder="Enter Quiz Code" maxlength="6">
-                        <button id="join-quiz-btn" class="btn secondary">Join Quiz</button>
+                        <h3>Available Quizzes</h3>
+                        <div id="available-quizzes" class="quiz-list">
+                            <div class="loading-message">Loading available quizzes...</div>
+                        </div>
+                        <button id="refresh-quizzes-btn" class="btn secondary">🔄 Refresh</button>
+                    </div>
+                    <div class="memory-bank-access">
+                        <a href="memory-bank/index.html" class="btn tertiary">🧠 Memory Bank</a>
                     </div>
                 </div>
             </div>
@@ -99,6 +105,12 @@
                         <span>Code: <strong id="session-code"></strong></span>
                         <span>Participants: <span id="participant-count">0</span></span>
                     </div>
+                </div>
+
+                <div class="share-link">
+                    <h4>Share this quiz with participants:</h4>
+                    <div id="quiz-share-url" class="share-url"></div>
+                    <button id="copy-link-btn" class="copy-link-btn">📋 Copy Link</button>
                 </div>
 
                 <div id="waiting-room" class="section">

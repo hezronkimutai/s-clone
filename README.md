@@ -4,13 +4,47 @@ A real-time quiz application similar to Slido, built with HTML, CSS, JavaScript,
 
 ## Features
 
-- **Create Quiz Sessions**: Host can create a quiz with a shareable 6-digit code
-- **Join Quiz**: Participants can join using the quiz code
+- **Create Quiz Sessions**: Host can create a quiz with a shareable link
+- **Smart Quiz Discovery**: Browse available quizzes with real-time status updates
+- **Link-Based Joining**: Share quiz links for instant participant access
 - **Real-time Updates**: All participants see questions simultaneously
 - **20-second Timer**: Each question has a 20-second timeout
 - **Live Scoring**: Scores are tracked and updated in real-time
 - **Leaderboard**: Final rankings shown at the end
 - **Responsive Design**: Works on desktop and mobile devices
+- **Memory Bank**: Comprehensive knowledge management system with project context, technical documentation, and development progress tracking
+
+## Quiz Joining Experience
+
+### For Participants:
+Instead of entering codes manually, participants can now:
+1. **Browse Available Quizzes**: See a live list of active quizzes with host names, participant counts, and status
+2. **One-Click Joining**: Click on any quiz to join instantly
+3. **Direct Link Access**: Use shareable links (e.g., `yoursite.com/?quiz=ABC123`) to join specific quizzes
+4. **Real-time Updates**: Quiz list refreshes automatically to show current status
+
+### For Hosts:
+1. **Easy Sharing**: Get a shareable link when creating a quiz
+2. **Copy Link Feature**: One-click copying with visual feedback
+3. **Live Tracking**: See participant count and quiz status in real-time
+4. **Multiple Share Options**: Share via link or display the traditional 6-digit code
+
+## Memory Bank System
+
+The Memory Bank is a knowledge management system that maintains comprehensive documentation about the project:
+
+- **Project Brief** (`memory-bank/projectbrief.md`): Project overview, objectives, and target audience
+- **Technical Context** (`memory-bank/techContext.md`): Technology stack, architecture patterns, and database schema
+- **Product Context** (`memory-bank/productContext.md`): Product vision, user personas, and market positioning
+- **System Patterns** (`memory-bank/systemPatterns.md`): Design patterns, communication patterns, and architectural decisions
+- **Progress Tracking** (`memory-bank/progress.md`): Development status, completed features, and roadmap
+- **Active Context** (`memory-bank/activeContext.md`): Real-time development context and session notes
+
+### Accessing the Memory Bank
+
+1. **Web Interface**: Navigate to `memory-bank/index.html` for a user-friendly view
+2. **Direct Access**: Click the "🧠 Memory Bank" button on the home screen
+3. **Developer Access**: Read the markdown files directly in the `memory-bank/` directory
 
 ## Quiz Questions
 
