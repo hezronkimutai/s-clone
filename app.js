@@ -159,20 +159,33 @@ function hideElement(elementId) {
 
 // Timer functions
 function startTimer(duration, displayElementId, onComplete) {
+    // Stop any existing timer first
+    stopTimer();
+    
     timeLeft = duration;
     const display = document.getElementById(displayElementId);
+    
+    if (!display) {
+        console.error('Timer display element not found:', displayElementId);
+        return;
+    }
+
+    // Initialize display
+    display.textContent = timeLeft;
 
     timer = setInterval(() => {
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            timer = null;
+            display.parentElement.classList.remove('warning');
+            onComplete();
+            return;
+        }
+
         display.textContent = timeLeft;
 
         if (timeLeft <= 5) {
             display.parentElement.classList.add('warning');
-        }
-
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            display.parentElement.classList.remove('warning');
-            onComplete();
         }
 
         timeLeft--;
@@ -183,6 +196,7 @@ function stopTimer() {
     if (timer) {
         clearInterval(timer);
         timer = null;
+        console.log('Timer stopped');
     }
 }
 
@@ -193,29 +207,45 @@ function createSession(hostName, sessionCode) {
         return Promise.reject(new Error('No questions available to create session'));
     }
     
+    console.log('Creating session with questions:', questions.length);
+    
     return database.ref('sessions/' + sessionCode).set({
         host: hostName,
         status: 'waiting', // waiting, active, completed
         currentQuestion: -1,
         participants: {},
         questions: questions, // Store questions in session for participants
+        questionsArray: questions, // Store as array for better compatibility
         totalQuestions: questions.length,
         createdAt: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        console.log('Session created successfully with questions:', questions.length);
     });
 }
 
 // Question management functions
 function loadQuestionsFromFirebase() {
+    console.log('Loading questions from Firebase...');
     return database.ref('questions').once('value').then(snapshot => {
         const firebaseQuestions = snapshot.val();
+        console.log('Firebase questions raw data:', firebaseQuestions);
         if (firebaseQuestions) {
             questions = Object.values(firebaseQuestions);
+            console.log('Loaded questions from Firebase:', questions.length);
             return questions;
         } else {
             // No questions in Firebase, use defaults
+            console.log('No questions in Firebase, using defaults');
             questions = [...defaultQuestions];
+            console.log('Loaded default questions:', questions.length);
             return questions;
         }
+    }).catch(error => {
+        console.error('Error loading questions from Firebase:', error);
+        // Fallback to defaults on error
+        questions = [...defaultQuestions];
+        console.log('Error fallback - using default questions:', questions.length);
+        return questions;
     });
 }
 
@@ -446,7 +476,6 @@ document.getElementById('join-session-btn').addEventListener('click', () => {
             showScreen('participantView');
             showToast(`Successfully joined quiz session!`, 'success', 'Welcome!');
 
-            // Load session data including questions FIRST
             return database.ref('sessions/' + currentSession).once('value');
         }).then(snapshot => {
             const session = snapshot.val();
@@ -454,21 +483,26 @@ document.getElementById('join-session-btn').addEventListener('click', () => {
             
             if (session && session.questions) {
                 questions = session.questions;
-                console.log('Participant loaded questions:', questions.length);
-                
-                // Test: display first question to verify questions are loaded
-                if (questions.length > 0) {
-                    console.log('First question:', questions[0]);
-                }
+                console.log('Participant loaded questions from session.questions:', questions.length);
+            } else if (session && session.questionsArray) {
+                questions = session.questionsArray;
+                console.log('Participant loaded questions from session.questionsArray:', questions.length);
             } else {
-                console.error('No questions found in session data');
+                console.warn('No questions found in session data, trying fallback');
                 // Fallback to loading from Firebase questions collection
                 return loadQuestionsFromFirebase().then(() => {
-                    console.log('Participant loaded questions from Firebase:', questions.length);
+                    console.log('Participant loaded questions from Firebase fallback:', questions.length);
                 });
             }
+            
+            // Test: display first question to verify questions are loaded
+            if (questions.length > 0) {
+                console.log('First question:', questions[0]);
+            }
+            
             setupParticipantListeners();
         }).catch(error => {
+            console.error('Error joining session:', error);
             showToast('Failed to join quiz session: ' + error.message, 'error', 'Join Failed');
         });
     } else {
@@ -517,12 +551,15 @@ function startQuiz() {
 }
 
 function showQuestion() {
+    console.log('Host showing question at index:', currentQuestionIndex);
     const question = questions[currentQuestionIndex];
     if (!question) {
         console.error('Question not found at index:', currentQuestionIndex);
         showToast('Error loading question. Please check your questions.', 'error');
         return;
     }
+    
+    console.log('Host question:', question.question);
     
     document.getElementById('current-question-num').textContent = currentQuestionIndex + 1;
     document.getElementById('total-questions').textContent = questions.length;
@@ -560,10 +597,15 @@ function showQuestion() {
         optionsContainer.appendChild(optionDiv);
     });
 
-    // Update question in database with both index and question data for verification
+    // Update question in database with both index and complete question data
     database.ref('sessions/' + currentSession).update({
         currentQuestion: currentQuestionIndex,
-        currentQuestionData: question // Include the actual question data for participants
+        currentQuestionData: question, // Include the actual question data for participants
+        questionsArray: questions // Include all questions for sync
+    }).then(() => {
+        console.log('Host: Question data updated in Firebase');
+    }).catch(error => {
+        console.error('Host: Error updating question data:', error);
     });
 
     // Start timer
@@ -680,9 +722,12 @@ function setupParticipantListeners() {
             // Always ensure we have the latest questions from the session
             if (session.questions && Array.isArray(session.questions)) {
                 questions = session.questions;
-                console.log('Participant synchronized questions:', questions.length);
+                console.log('Participant synchronized questions from session.questions:', questions.length);
+            } else if (session.questionsArray && Array.isArray(session.questionsArray)) {
+                questions = session.questionsArray;
+                console.log('Participant synchronized questions from session.questionsArray:', questions.length);
             } else {
-                console.warn('No questions found in session data');
+                console.warn('No questions found in session data, keeping existing questions');
             }
 
             console.log('Session status:', session.status, 'Current question:', session.currentQuestion);
@@ -707,8 +752,11 @@ function setupParticipantListeners() {
 function showParticipantQuestion(questionIndex, currentQuestionData = null) {
     console.log('showParticipantQuestion called with index:', questionIndex, 'current:', currentQuestionIndex);
     
-    // Always update if this is a different question
-    if (questionIndex !== currentQuestionIndex) {
+    // Always update if this is a different question or force update
+    if (questionIndex !== currentQuestionIndex || !currentQuestionData) {
+        // Stop any existing timer first
+        stopTimer();
+        
         currentQuestionIndex = questionIndex;
         hideElement('participant-feedback');
 
@@ -717,6 +765,7 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
         
         if (!question && questions && questions[currentQuestionIndex]) {
             question = questions[currentQuestionIndex];
+            console.log('Using local question data');
         }
 
         // If still no question, try to reload from session
@@ -725,14 +774,24 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
             showToast('Loading questions...', 'info');
             
             // Try to reload questions from session
-            database.ref('sessions/' + currentSession + '/questions').once('value').then(snapshot => {
-                const sessionQuestions = snapshot.val();
-                if (sessionQuestions && sessionQuestions[questionIndex]) {
-                    questions = sessionQuestions;
-                    showParticipantQuestion(questionIndex); // Retry
-                } else {
-                    showToast('Unable to load questions. Please refresh the page.', 'error');
+            database.ref('sessions/' + currentSession).once('value').then(snapshot => {
+                const sessionData = snapshot.val();
+                if (sessionData) {
+                    if (sessionData.questions && sessionData.questions[questionIndex]) {
+                        questions = sessionData.questions;
+                        console.log('Reloaded questions from session.questions');
+                        showParticipantQuestion(questionIndex, sessionData.currentQuestionData); // Retry
+                    } else if (sessionData.questionsArray && sessionData.questionsArray[questionIndex]) {
+                        questions = sessionData.questionsArray;
+                        console.log('Reloaded questions from session.questionsArray');
+                        showParticipantQuestion(questionIndex, sessionData.currentQuestionData); // Retry
+                    } else {
+                        showToast('Unable to load questions. Please refresh the page.', 'error');
+                    }
                 }
+            }).catch(error => {
+                console.error('Error reloading questions:', error);
+                showToast('Error loading questions. Please refresh the page.', 'error');
             });
             return;
         }
@@ -770,12 +829,16 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
             optionsContainer.appendChild(optionDiv);
         });
 
-        // Start participant timer
+        // Start participant timer with proper element ID
+        console.log('Starting participant timer');
         startTimer(20, 'participant-timer', () => {
+            console.log('Participant timer finished');
             // Time's up - disable options
             optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
                 opt.style.pointerEvents = 'none';
+                opt.style.opacity = '0.6';
             });
+            showToast('Time\'s up!', 'warning');
         });
     } else {
         console.log('Question not shown - same index:', questionIndex);
@@ -965,24 +1028,32 @@ screens.questions = document.getElementById('questions-screen');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('App initializing...');
+    
     // Check for quiz parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const quizId = urlParams.get('quiz');
     
     if (quizId) {
         // Auto-join quiz if URL parameter is present
+        console.log('Auto-joining quiz:', quizId);
         joinQuizById(quizId);
     } else {
         showScreen('home');
     }
     
     // Load questions on app start
+    console.log('Loading initial questions...');
     loadQuestionsFromFirebase().then(() => {
-        console.log('Initial questions loaded:', questions.length);
+        console.log('Initial questions loaded successfully:', questions.length);
+        if (questions.length > 0) {
+            console.log('Sample question:', questions[0].question);
+        }
     }).catch(error => {
         console.error('Error loading initial questions:', error);
         showToast('Warning: Could not load questions from database. Using defaults.', 'warning');
         questions = [...defaultQuestions];
+        console.log('Fallback complete - questions available:', questions.length);
     });
 });
 
