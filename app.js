@@ -443,6 +443,25 @@ function showQuestion() {
             <span class="option-letter">${String.fromCharCode(65 + index)}</span>
             <span>${option}</span>
         `;
+        
+        // Add click handler for host to see selection (visual feedback only)
+        optionDiv.addEventListener('click', () => {
+            // Remove previous selections
+            optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Select this option
+            optionDiv.classList.add('selected');
+            
+            // Show visual feedback that this is the correct answer
+            if (index === question.correct) {
+                showToast('This is the correct answer!', 'success', 'Host Preview');
+            } else {
+                showToast('This is not the correct answer. Correct: ' + question.options[question.correct], 'info', 'Host Preview');
+            }
+        });
+        
         optionsContainer.appendChild(optionDiv);
     });
 
