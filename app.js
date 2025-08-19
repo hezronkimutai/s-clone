@@ -18,6 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+const auth = firebase.auth();
 
 // Default quiz questions
 const defaultQuestions = [
@@ -83,6 +84,7 @@ let currentQuestionIndex = -1;
 let timer = null;
 let timeLeft = 20;
 let userRole = null; // 'host' or 'participant'
+let authenticatedUser = null; // Firebase authenticated user
 
 // DOM elements
 const screens = {
@@ -205,6 +207,125 @@ function stopTimer() {
     }
 }
 
+// Authentication functions
+function initializeAuth() {
+    // Listen for authentication state changes
+    auth.onAuthStateChanged((user) => {
+        authenticatedUser = user;
+        updateAuthUI();
+        if (user) {
+            console.log('User signed in:', user.email);
+            loadMyQuizzes();
+        } else {
+            console.log('User signed out');
+            hideMyQuizzes();
+        }
+    });
+}
+
+function updateAuthUI() {
+    const signedOutView = document.getElementById('signed-out-view');
+    const signedInView = document.getElementById('signed-in-view');
+    const myQuizzesSection = document.getElementById('my-quizzes-section');
+
+    if (authenticatedUser) {
+        // User is signed in
+        signedOutView.classList.add('hidden');
+        signedInView.classList.remove('hidden');
+        myQuizzesSection.classList.remove('hidden');
+
+        // Update user info
+        const userName = document.getElementById('user-name');
+        const userEmail = document.getElementById('user-email');
+        const userPhoto = document.getElementById('user-photo');
+        const userInitials = document.getElementById('user-initials');
+
+        userName.textContent = authenticatedUser.displayName || 'User';
+        userEmail.textContent = authenticatedUser.email;
+
+        if (authenticatedUser.photoURL) {
+            userPhoto.src = authenticatedUser.photoURL;
+            userPhoto.style.display = 'block';
+            userInitials.style.display = 'none';
+        } else {
+            userPhoto.style.display = 'none';
+            userInitials.style.display = 'flex';
+            const initials = (authenticatedUser.displayName || authenticatedUser.email)
+                .split(' ')
+                .map(name => name[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+            userInitials.textContent = initials;
+        }
+    } else {
+        // User is signed out
+        signedOutView.classList.remove('hidden');
+        signedInView.classList.add('hidden');
+        myQuizzesSection.classList.add('hidden');
+    }
+}
+
+function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+        .then((result) => {
+            showToast('Successfully signed in with Google!', 'success', 'Welcome!');
+        })
+        .catch((error) => {
+            console.error('Google sign-in error:', error);
+            showToast('Failed to sign in with Google: ' + error.message, 'error', 'Sign-in Failed');
+        });
+}
+
+function signInWithEmail(email, password) {
+    return auth.signInWithEmailAndPassword(email, password)
+        .then((result) => {
+            showToast('Successfully signed in!', 'success', 'Welcome Back!');
+            closeEmailModal();
+        })
+        .catch((error) => {
+            console.error('Email sign-in error:', error);
+            showToast('Failed to sign in: ' + error.message, 'error', 'Sign-in Failed');
+            throw error;
+        });
+}
+
+function createAccountWithEmail(email, password) {
+    return auth.createUserWithEmailAndPassword(email, password)
+        .then((result) => {
+            showToast('Account created successfully!', 'success', 'Welcome!');
+            closeEmailModal();
+        })
+        .catch((error) => {
+            console.error('Account creation error:', error);
+            showToast('Failed to create account: ' + error.message, 'error', 'Account Creation Failed');
+            throw error;
+        });
+}
+
+function signOut() {
+    auth.signOut()
+        .then(() => {
+            showToast('Successfully signed out', 'info', 'Goodbye!');
+        })
+        .catch((error) => {
+            console.error('Sign-out error:', error);
+            showToast('Failed to sign out: ' + error.message, 'error', 'Sign-out Failed');
+        });
+}
+
+function openEmailModal() {
+    document.getElementById('email-signin-modal').classList.remove('hidden');
+}
+
+function closeEmailModal() {
+    document.getElementById('email-signin-modal').classList.add('hidden');
+    // Reset form
+    document.getElementById('email-input').value = '';
+    document.getElementById('password-input').value = '';
+}
+
 // Firebase helper functions
 function createSession(hostName, sessionCode) {
     // Ensure we have questions before creating the session
@@ -214,7 +335,7 @@ function createSession(hostName, sessionCode) {
     
     console.log('Creating session with questions:', questions.length);
     
-    return database.ref('sessions/' + sessionCode).set({
+    const sessionData = {
         host: hostName,
         status: 'waiting', // waiting, active, completed
         currentQuestion: -1,
@@ -223,7 +344,15 @@ function createSession(hostName, sessionCode) {
         questionsArray: questions, // Store as array for better compatibility
         totalQuestions: questions.length,
         createdAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
+    };
+    
+    // Add host ID if user is authenticated
+    if (authenticatedUser) {
+        sessionData.hostId = authenticatedUser.uid;
+        sessionData.hostEmail = authenticatedUser.email;
+    }
+    
+    return database.ref('sessions/' + sessionCode).set(sessionData).then(() => {
         console.log('Session created successfully with questions:', questions.length);
     });
 }
@@ -295,9 +424,81 @@ document.getElementById('create-quiz-btn').addEventListener('click', () => {
     showScreen('create');
 });
 
+// Authentication event listeners
+document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
+
+document.getElementById('email-signin-btn').addEventListener('click', openEmailModal);
+
+document.getElementById('signout-btn').addEventListener('click', signOut);
+
+document.getElementById('close-email-modal').addEventListener('click', closeEmailModal);
+
+document.getElementById('signin-submit-btn').addEventListener('click', () => {
+    const email = document.getElementById('email-input').value.trim();
+    const password = document.getElementById('password-input').value;
+    
+    if (email && password) {
+        signInWithEmail(email, password);
+    } else {
+        showToast('Please enter both email and password', 'warning', 'Missing Information');
+    }
+});
+
+document.getElementById('signup-submit-btn').addEventListener('click', () => {
+    const email = document.getElementById('email-input').value.trim();
+    const password = document.getElementById('password-input').value;
+    
+    if (email && password) {
+        if (password.length < 6) {
+            showToast('Password must be at least 6 characters long', 'warning', 'Password Too Short');
+            return;
+        }
+        createAccountWithEmail(email, password);
+    } else {
+        showToast('Please enter both email and password', 'warning', 'Missing Information');
+    }
+});
+
+document.getElementById('toggle-signup').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('signin-submit-btn').style.display = 'none';
+    document.getElementById('signup-submit-btn').style.display = 'block';
+    document.querySelector('.form-toggle p').style.display = 'none';
+    document.getElementById('signup-text').style.display = 'block';
+});
+
+document.getElementById('toggle-signin').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('signin-submit-btn').style.display = 'block';
+    document.getElementById('signup-submit-btn').style.display = 'none';
+    document.querySelector('.form-toggle p').style.display = 'block';
+    document.getElementById('signup-text').style.display = 'none';
+});
+
+// My Quizzes event listeners
+document.getElementById('refresh-my-quizzes-btn').addEventListener('click', loadMyQuizzes);
+
+// Close modal when clicking outside
+document.getElementById('email-signin-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'email-signin-modal') {
+        closeEmailModal();
+    }
+});
+
 // Load available quizzes when the page loads
 document.addEventListener('DOMContentLoaded', function() {
+    initializeAuth();
     loadAvailableQuizzes();
+    
+    // Check for quiz parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const quizCode = urlParams.get('quiz');
+    if (quizCode) {
+        // Auto-join quiz from URL
+        setTimeout(() => {
+            joinQuizById(quizCode);
+        }, 1000); // Small delay to ensure UI is ready
+    }
 });
 
 // Refresh quizzes button
@@ -1158,4 +1359,156 @@ function fallbackCopyTextToClipboard(text) {
     }
     
     document.body.removeChild(textArea);
+}
+
+// My Quizzes functions
+function loadMyQuizzes() {
+    if (!authenticatedUser) return;
+
+    const myQuizzesList = document.getElementById('my-quizzes-list');
+    myQuizzesList.innerHTML = '<div class="loading-message">Loading your quizzes...</div>';
+    
+    // Query sessions created by the current user
+    database.ref('sessions').orderByChild('hostId').equalTo(authenticatedUser.uid).once('value').then(snapshot => {
+        const sessions = snapshot.val();
+        myQuizzesList.innerHTML = '';
+        
+        if (!sessions) {
+            myQuizzesList.innerHTML = '<div class="no-quizzes-message">You haven\'t created any quizzes yet. Create your first quiz!</div>';
+            return;
+        }
+        
+        const userQuizzes = Object.keys(sessions)
+            .map(sessionId => ({ id: sessionId, ...sessions[sessionId] }))
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // Sort by creation time, newest first
+        
+        if (userQuizzes.length === 0) {
+            myQuizzesList.innerHTML = '<div class="no-quizzes-message">You haven\'t created any quizzes yet. Create your first quiz!</div>';
+            return;
+        }
+        
+        userQuizzes.forEach(session => {
+            const quizItem = createMyQuizItem(session.id, session);
+            myQuizzesList.appendChild(quizItem);
+        });
+    }).catch(error => {
+        console.error('Error loading my quizzes:', error);
+        myQuizzesList.innerHTML = '<div class="no-quizzes-message">Error loading your quizzes. Please try again.</div>';
+    });
+}
+
+function createMyQuizItem(sessionId, session) {
+    const quizItem = document.createElement('div');
+    quizItem.className = 'quiz-item my-quiz';
+    
+    const participantCount = session.participants ? Object.keys(session.participants).length : 0;
+    const questionCount = session.questions ? session.questions.length : 0;
+    
+    const statusClass = {
+        'waiting': 'status-waiting',
+        'active': 'status-active',
+        'completed': 'status-completed'
+    }[session.status] || 'status-waiting';
+    
+    const statusText = {
+        'waiting': 'Waiting for participants',
+        'active': 'Quiz in progress',
+        'completed': 'Completed'
+    }[session.status] || 'Unknown';
+    
+    const createdDate = session.createdAt ? new Date(session.createdAt).toLocaleDateString() : 'Unknown';
+    
+    quizItem.innerHTML = `
+        <div class="quiz-title">My Quiz - ${createdDate}</div>
+        <div class="quiz-details">
+            <span>👥 ${participantCount} participants • ❓ ${questionCount} questions</span>
+            <span class="quiz-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="quiz-actions">
+            ${session.status !== 'completed' ? 
+                `<button class="resume-btn" onclick="resumeQuiz('${sessionId}')">Resume Quiz</button>` : 
+                `<button class="resume-btn" onclick="viewQuizResults('${sessionId}')">View Results</button>`
+            }
+            <button class="delete-btn" onclick="deleteMyQuiz('${sessionId}')">Delete</button>
+        </div>
+    `;
+    
+    return quizItem;
+}
+
+function resumeQuiz(sessionId) {
+    // Check if session still exists
+    database.ref('sessions/' + sessionId).once('value').then(snapshot => {
+        if (snapshot.exists()) {
+            const session = snapshot.val();
+            if (session.hostId === authenticatedUser.uid) {
+                // User owns this quiz, resume it
+                currentSession = sessionId;
+                currentUser = authenticatedUser.displayName || authenticatedUser.email;
+                userRole = 'host';
+                
+                // Load questions from session
+                if (session.questions) {
+                    questions = session.questions;
+                } else if (session.questionsArray) {
+                    questions = session.questionsArray;
+                }
+                
+                document.getElementById('session-code').textContent = sessionId;
+                
+                // Generate and display share link
+                const shareUrl = `${window.location.origin}${window.location.pathname}?quiz=${sessionId}`;
+                document.getElementById('quiz-share-url').textContent = shareUrl;
+                
+                showScreen('hostDashboard');
+                setupHostListeners();
+                
+                if (session.status === 'active' && session.currentQuestion >= 0) {
+                    // Quiz is in progress, show current question
+                    currentQuestionIndex = session.currentQuestion;
+                    hideElement('waiting-room');
+                    showElement('question-display');
+                    showQuestion();
+                } else {
+                    // Quiz is waiting, show waiting room
+                    showElement('waiting-room');
+                    hideElement('question-display');
+                }
+                
+                showToast(`Resumed quiz session: ${sessionId}`, 'success', 'Quiz Resumed');
+            } else {
+                showToast('You don\'t have permission to resume this quiz.', 'error', 'Access Denied');
+            }
+        } else {
+            showToast('Quiz session no longer exists.', 'error', 'Session Not Found');
+            loadMyQuizzes(); // Refresh the list
+        }
+    }).catch(error => {
+        console.error('Error resuming quiz:', error);
+        showToast('Error resuming quiz. Please try again.', 'error', 'Resume Failed');
+    });
+}
+
+function viewQuizResults(sessionId) {
+    // For completed quizzes, show results
+    resumeQuiz(sessionId); // This will load the quiz and show results if completed
+}
+
+function deleteMyQuiz(sessionId) {
+    if (confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+        database.ref('sessions/' + sessionId).remove()
+            .then(() => {
+                showToast('Quiz deleted successfully', 'success', 'Quiz Deleted');
+                loadMyQuizzes(); // Refresh the list
+            })
+            .catch(error => {
+                console.error('Error deleting quiz:', error);
+                showToast('Failed to delete quiz: ' + error.message, 'error', 'Delete Failed');
+            });
+    }
+}
+
+function hideMyQuizzes() {
+    const myQuizzesSection = document.getElementById('my-quizzes-section');
+    myQuizzesSection.classList.add('hidden');
 }
