@@ -1,13 +1,18 @@
-// Firebase configuration
+// Application configuration
+const config = {
+    timerDuration: parseInt(process.env.DEFAULT_TIMER_DURATION) || 20
+};
+
+// Firebase configuration - using environment variables
 const firebaseConfig = {
-    apiKey: "AIzaSyA2MOailKWC3twyYL9zgEvLV81HvCuobW0",
-    authDomain: "hkgroup-5e357.firebaseapp.com",
-    databaseURL: "https://hkgroup-5e357-default-rtdb.firebaseio.com",
-    projectId: "hkgroup-5e357",
-    storageBucket: "hkgroup-5e357.firebasestorage.app",
-    messagingSenderId: "666174502563",
-    appId: "1:666174502563:web:347281452bf18b4e697116",
-    measurementId: "G-5BVC79DJYQ"
+    apiKey: process.env.FIREBASE_API_KEY || "AIzaSyA2MOailKWC3twyYL9zgEvLV81HvCuobW0",
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN || "hkgroup-5e357.firebaseapp.com",
+    databaseURL: process.env.FIREBASE_DATABASE_URL || "https://hkgroup-5e357-default-rtdb.firebaseio.com",
+    projectId: process.env.FIREBASE_PROJECT_ID || "hkgroup-5e357",
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "hkgroup-5e357.firebasestorage.app",
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "666174502563",
+    appId: process.env.FIREBASE_APP_ID || "1:666174502563:web:347281452bf18b4e697116",
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-5BVC79DJYQ"
 };
 
 // Initialize Firebase
@@ -609,7 +614,7 @@ function showQuestion() {
     });
 
     // Start timer
-    startTimer(20, 'timer-display', () => {
+    startTimer(config.timerDuration, 'timer-display', () => {
         showQuestionResults();
     });
 }
@@ -831,7 +836,7 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
 
         // Start participant timer with proper element ID
         console.log('Starting participant timer');
-        startTimer(20, 'participant-timer', () => {
+        startTimer(config.timerDuration, 'participant-timer', () => {
             console.log('Participant timer finished');
             
             // Time's up - disable options if not already disabled

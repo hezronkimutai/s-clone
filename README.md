@@ -78,21 +78,28 @@ The app includes 10 fun tech/dairy-themed questions:
    ```
 5. Get your Firebase configuration from Project Settings
 
-### 2. Configure the App
+### 2. Configure Environment Variables
 
-1. Open `app.js`
-2. Replace the `firebaseConfig` object with your actual Firebase configuration:
-   ```javascript
-   const firebaseConfig = {
-       apiKey: "your-api-key",
-       authDomain: "your-project.firebaseapp.com",
-       databaseURL: "https://your-project-default-rtdb.firebaseio.com/",
-       projectId: "your-project-id",
-       storageBucket: "your-project.appspot.com",
-       messagingSenderId: "123456789",
-       appId: "your-app-id"
-   };
+1. Copy the `.env` file and update it with your Firebase configuration:
+   ```env
+   # Firebase Configuration
+   FIREBASE_API_KEY=your-api-key
+   FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
+   FIREBASE_PROJECT_ID=your-project-id
+   FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+   FIREBASE_MESSAGING_SENDER_ID=123456789
+   FIREBASE_APP_ID=your-app-id
+   FIREBASE_MEASUREMENT_ID=your-measurement-id
+
+   # Application Settings
+   DEFAULT_TIMER_DURATION=20
    ```
+
+2. For development, update `env-loader.js` with your configuration values
+3. For production, use a build tool like Webpack, Vite, or Parcel to inject environment variables
+
+**Note**: The `.env` file is already included in `.gitignore` to prevent committing sensitive data.
 
 ### 3. Run the Application
 
