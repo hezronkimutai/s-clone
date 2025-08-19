@@ -172,25 +172,35 @@
 
         .back-to-app {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             background: linear-gradient(135deg, #06B6D4, #3B82F6);
             color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 30px;
             cursor: pointer;
             text-decoration: none;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
-            backdrop-filter: blur(10px);
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .back-to-app:hover {
             background: linear-gradient(135deg, #0891B2, #2563EB);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.5);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-to-app:active {
+            transform: translateY(-1px) scale(1.02);
         }
 
         .search-box {
@@ -233,12 +243,26 @@
             .memory-bank-container {
                 margin: 10px;
                 padding: 15px;
+                margin-top: 80px; /* Add space for the back button */
+            }
+
+            .back-to-app {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                padding: 12px 20px;
+                font-size: 14px;
+                text-align: center;
+                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
-    <a href="../index.html" class="back-to-app">← Back to Quiz Master</a>
+    <a href="../index.html" class="back-to-app">
+        <span>←</span>
+        <span>Back to Quiz Master</span>
+    </a>
     
     <div class="memory-bank-container">
         <h1 style="text-align: center; color: #667eea; margin-bottom: 30px;">
@@ -248,16 +272,43 @@
         <input type="text" id="searchBox" class="search-box" placeholder="Search memory bank content...">
         
         <div class="memory-nav">
-            <button onclick="loadContext('project')" class="active">Project Brief</button>
-            <button onclick="loadContext('tech')">Technical Context</button>
-            <button onclick="loadContext('product')">Product Context</button>
-            <button onclick="loadContext('patterns')">System Patterns</button>
-            <button onclick="loadContext('progress')">Progress</button>
-            <button onclick="loadContext('active')">Active Context</button>
+            <button onclick="loadContext('project', this)" class="active">Project Brief</button>
+            <button onclick="loadContext('tech', this)">Technical Context</button>
+            <button onclick="loadContext('product', this)">Product Context</button>
+            <button onclick="loadContext('patterns', this)">System Patterns</button>
+            <button onclick="loadContext('progress', this)">Progress</button>
+            <button onclick="loadContext('active', this)">Active Context</button>
         </div>
         
         <div id="memoryContent" class="memory-content">
-            <!-- Content will be loaded here -->
+            <h1>Project Brief: Quiz Master - Slido Clone</h1>
+            <h2>Project Overview</h2>
+            <p>Quiz Master is a real-time quiz application that replicates the core functionality of Slido. It enables hosts to create interactive quiz sessions and participants to join using shareable codes, providing an engaging real-time quiz experience.</p>
+            
+            <h2>Core Objectives</h2>
+            <ul>
+                <li><strong>Real-time Interaction</strong>: Enable seamless real-time communication between hosts and participants</li>
+                <li><strong>User-Friendly Experience</strong>: Provide intuitive interfaces for both quiz creation and participation</li>
+                <li><strong>Scalable Architecture</strong>: Support multiple concurrent quiz sessions with Firebase backend</li>
+                <li><strong>Cross-Platform Compatibility</strong>: Ensure functionality across desktop and mobile devices</li>
+            </ul>
+            
+            <h2>Key Features</h2>
+            <ol>
+                <li><strong>Session Management</strong>: 6-digit code system for easy session joining</li>
+                <li><strong>Real-time Updates</strong>: Synchronized question display and timing across all participants</li>
+                <li><strong>Interactive Quizzing</strong>: 20-second timer per question with immediate feedback</li>
+                <li><strong>Live Scoring</strong>: Real-time score tracking and leaderboard generation</li>
+                <li><strong>Question Management</strong>: Built-in question editor with default tech/dairy-themed questions</li>
+                <li><strong>Responsive Design</strong>: Mobile-first approach with cross-device compatibility</li>
+            </ol>
+            
+            <h2>Target Audience</h2>
+            <ul>
+                <li><strong>Primary</strong>: Educators, trainers, and presenters conducting interactive sessions</li>
+                <li><strong>Secondary</strong>: Event organizers, corporate teams, and educational institutions</li>
+                <li><strong>Use Cases</strong>: Classroom quizzes, corporate training, conference engagement, team building</li>
+            </ul>
         </div>
     </div>
 
@@ -487,7 +538,7 @@ database.ref('sessions/\${sessionCode}/participants').on('value', (snapshot) => 
         };
 
         // Load content based on context type
-        function loadContext(contextType) {
+        function loadContext(contextType, buttonElement = null) {
             const content = memoryBank[contextType];
             if (!content) return;
 
@@ -495,7 +546,17 @@ database.ref('sessions/\${sessionCode}/participants').on('value', (snapshot) => 
             document.querySelectorAll('.memory-nav button').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            
+            // Set active button - either the clicked button or find the project button for default load
+            if (buttonElement) {
+                buttonElement.classList.add('active');
+            } else if (contextType === 'project') {
+                // Find and activate the Project Brief button for default load
+                const projectButton = document.querySelector('.memory-nav button[onclick*="project"]');
+                if (projectButton) {
+                    projectButton.classList.add('active');
+                }
+            }
 
             // Load content
             document.getElementById('memoryContent').innerHTML = `
@@ -532,7 +593,7 @@ database.ref('sessions/\${sessionCode}/participants').on('value', (snapshot) => 
                     <h1>Search Results for "${searchTerm}"</h1>
                     <div style="margin-bottom: 20px;">
                         ${searchResults.map(result => `
-                            <div style="background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; cursor: pointer;" onclick="loadContext('${result.context}')">
+                            <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; margin: 10px 0; border-radius: 5px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.2);" onclick="loadContext('${result.context}')"
                                 <h3 style="color: #667eea; margin: 0;">${result.title}</h3>
                                 <p style="margin: 5px 0 0 0; color: #666;">${result.matches} matches found</p>
                             </div>
