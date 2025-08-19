@@ -168,10 +168,10 @@ function hideElement(elementId) {
 function startTimer(duration, displayElementId, onComplete) {
     // Stop any existing timer first
     stopTimer();
-    
+
     timeLeft = duration;
     const display = document.getElementById(displayElementId);
-    
+
     if (!display) {
         console.error('Timer display element not found:', displayElementId);
         return;
@@ -226,13 +226,11 @@ function initializeAuth() {
 function updateAuthUI() {
     const signedOutView = document.getElementById('signed-out-view');
     const signedInView = document.getElementById('signed-in-view');
-    const myQuizzesSection = document.getElementById('my-quizzes-section');
 
     if (authenticatedUser) {
         // User is signed in
         signedOutView.classList.add('hidden');
         signedInView.classList.remove('hidden');
-        myQuizzesSection.classList.remove('hidden');
 
         // Update user info
         const userName = document.getElementById('user-name');
@@ -262,8 +260,10 @@ function updateAuthUI() {
         // User is signed out
         signedOutView.classList.remove('hidden');
         signedInView.classList.add('hidden');
-        myQuizzesSection.classList.add('hidden');
     }
+
+    // Update tabs for authentication state
+    updateTabsForAuthState();
 }
 
 function signInWithGoogle() {
@@ -332,9 +332,9 @@ function createSession(hostName, sessionCode) {
     if (!questions || questions.length === 0) {
         return Promise.reject(new Error('No questions available to create session'));
     }
-    
+
     console.log('Creating session with questions:', questions.length);
-    
+
     const sessionData = {
         host: hostName,
         status: 'waiting', // waiting, active, completed
@@ -345,13 +345,13 @@ function createSession(hostName, sessionCode) {
         totalQuestions: questions.length,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
-    
+
     // Add host ID if user is authenticated
     if (authenticatedUser) {
         sessionData.hostId = authenticatedUser.uid;
         sessionData.hostEmail = authenticatedUser.email;
     }
-    
+
     return database.ref('sessions/' + sessionCode).set(sessionData).then(() => {
         console.log('Session created successfully with questions:', questions.length);
     });
@@ -436,7 +436,7 @@ document.getElementById('close-email-modal').addEventListener('click', closeEmai
 document.getElementById('signin-submit-btn').addEventListener('click', () => {
     const email = document.getElementById('email-input').value.trim();
     const password = document.getElementById('password-input').value;
-    
+
     if (email && password) {
         signInWithEmail(email, password);
     } else {
@@ -447,7 +447,7 @@ document.getElementById('signin-submit-btn').addEventListener('click', () => {
 document.getElementById('signup-submit-btn').addEventListener('click', () => {
     const email = document.getElementById('email-input').value.trim();
     const password = document.getElementById('password-input').value;
-    
+
     if (email && password) {
         if (password.length < 6) {
             showToast('Password must be at least 6 characters long', 'warning', 'Password Too Short');
@@ -486,10 +486,11 @@ document.getElementById('email-signin-modal').addEventListener('click', (e) => {
 });
 
 // Load available quizzes when the page loads
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeAuth();
+    initializeTabs();
     loadAvailableQuizzes();
-    
+
     // Check for quiz parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const quizCode = urlParams.get('quiz');
@@ -510,16 +511,16 @@ document.getElementById('refresh-quizzes-btn').addEventListener('click', () => {
 function loadAvailableQuizzes() {
     const quizList = document.getElementById('available-quizzes');
     quizList.innerHTML = '<div class="loading-message">Loading available quizzes...</div>';
-    
+
     database.ref('sessions').once('value').then(snapshot => {
         const sessions = snapshot.val();
         quizList.innerHTML = '';
-        
+
         if (!sessions) {
             quizList.innerHTML = '<div class="no-quizzes-message">No active quizzes found. Create one to get started!</div>';
             return;
         }
-        
+
         const activeQuizzes = Object.keys(sessions)
             .filter(sessionId => {
                 const session = sessions[sessionId];
@@ -531,12 +532,12 @@ function loadAvailableQuizzes() {
                 const timeB = sessions[b].createdAt || 0;
                 return timeB - timeA;
             });
-        
+
         if (activeQuizzes.length === 0) {
             quizList.innerHTML = '<div class="no-quizzes-message">No active quizzes found. Create one to get started!</div>';
             return;
         }
-        
+
         activeQuizzes.forEach(sessionId => {
             const session = sessions[sessionId];
             const quizItem = createQuizItem(sessionId, session);
@@ -553,22 +554,22 @@ function createQuizItem(sessionId, session) {
     const quizItem = document.createElement('div');
     quizItem.className = 'quiz-item';
     quizItem.onclick = () => joinQuizById(sessionId);
-    
+
     const participantCount = session.participants ? Object.keys(session.participants).length : 0;
     const questionCount = session.questions ? session.questions.length : 0;
-    
+
     const statusClass = {
         'waiting': 'status-waiting',
         'active': 'status-active',
         'completed': 'status-completed'
     }[session.status] || 'status-waiting';
-    
+
     const statusText = {
         'waiting': 'Waiting for participants',
         'active': 'Quiz in progress',
         'completed': 'Completed'
     }[session.status] || 'Unknown';
-    
+
     quizItem.innerHTML = `
         <div class="quiz-title">Quiz by ${session.host || 'Unknown Host'}</div>
         <div class="quiz-details">
@@ -576,7 +577,7 @@ function createQuizItem(sessionId, session) {
             <span class="quiz-status ${statusClass}">${statusText}</span>
         </div>
     `;
-    
+
     return quizItem;
 }
 
@@ -651,11 +652,11 @@ document.getElementById('start-quiz-btn').addEventListener('click', () => {
         }).then(() => {
             if (currentSession) {
                 document.getElementById('session-code').textContent = currentSession;
-                
+
                 // Generate and display share link
                 const shareUrl = `${window.location.origin}${window.location.pathname}?quiz=${currentSession}`;
                 document.getElementById('quiz-share-url').textContent = shareUrl;
-                
+
                 showScreen('hostDashboard');
                 showToast(`Quiz created successfully! Share code: ${currentSession}`, 'success', 'Quiz Ready');
                 setupHostListeners();
@@ -686,7 +687,7 @@ document.getElementById('join-session-btn').addEventListener('click', () => {
         }).then(snapshot => {
             const session = snapshot.val();
             console.log('Session data loaded:', session);
-            
+
             if (session && session.questions) {
                 questions = session.questions;
                 console.log('Participant loaded questions from session.questions:', questions.length);
@@ -700,12 +701,12 @@ document.getElementById('join-session-btn').addEventListener('click', () => {
                     console.log('Participant loaded questions from Firebase fallback:', questions.length);
                 });
             }
-            
+
             // Test: display first question to verify questions are loaded
             if (questions.length > 0) {
                 console.log('First question:', questions[0]);
             }
-            
+
             setupParticipantListeners();
         }).catch(error => {
             console.error('Error joining session:', error);
@@ -764,9 +765,9 @@ function showQuestion() {
         showToast('Error loading question. Please check your questions.', 'error');
         return;
     }
-    
+
     console.log('Host question:', question.question);
-    
+
     document.getElementById('current-question-num').textContent = currentQuestionIndex + 1;
     document.getElementById('total-questions').textContent = questions.length;
     document.getElementById('question-text').textContent = question.question;
@@ -781,17 +782,17 @@ function showQuestion() {
             <span class="option-letter">${String.fromCharCode(65 + index)}</span>
             <span>${option}</span>
         `;
-        
+
         // Add click handler for host to see selection (visual feedback only)
         optionDiv.addEventListener('click', () => {
             // Remove previous selections
             optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
-            
+
             // Select this option
             optionDiv.classList.add('selected');
-            
+
             // Show visual feedback that this is the correct answer
             if (index === question.correct) {
                 showToast('This is the correct answer!', 'success', 'Host Preview');
@@ -799,7 +800,7 @@ function showQuestion() {
                 showToast('This is not the correct answer. Correct: ' + question.options[question.correct], 'info', 'Host Preview');
             }
         });
-        
+
         optionsContainer.appendChild(optionDiv);
     });
 
@@ -918,12 +919,12 @@ function showFinalResults() {
 // Participant functions
 function setupParticipantListeners() {
     console.log('Setting up participant listeners for session:', currentSession);
-    
+
     // Listen for quiz status changes
     database.ref('sessions/' + currentSession).on('value', (snapshot) => {
         const session = snapshot.val();
         console.log('Participant received session update:', session);
-        
+
         if (session) {
             // Always ensure we have the latest questions from the session
             if (session.questions && Array.isArray(session.questions)) {
@@ -957,18 +958,18 @@ function setupParticipantListeners() {
 
 function showParticipantQuestion(questionIndex, currentQuestionData = null) {
     console.log('showParticipantQuestion called with index:', questionIndex, 'current:', currentQuestionIndex);
-    
+
     // Always update if this is a different question or force update
     if (questionIndex !== currentQuestionIndex || !currentQuestionData) {
         // Stop any existing timer first
         stopTimer();
-        
+
         currentQuestionIndex = questionIndex;
         hideElement('participant-feedback');
 
         // Try to use the current question data from host first, then fallback to local questions
         let question = currentQuestionData;
-        
+
         if (!question && questions && questions[currentQuestionIndex]) {
             question = questions[currentQuestionIndex];
             console.log('Using local question data');
@@ -978,7 +979,7 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
         if (!question) {
             console.error('No question available at index:', currentQuestionIndex, 'Total questions:', questions ? questions.length : 0);
             showToast('Loading questions...', 'info');
-            
+
             // Try to reload questions from session
             database.ref('sessions/' + currentSession).once('value').then(snapshot => {
                 const sessionData = snapshot.val();
@@ -1003,7 +1004,7 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
         }
 
         console.log('Displaying question:', question.question);
-        
+
         document.getElementById('participant-question-num').textContent = currentQuestionIndex + 1;
         document.getElementById('participant-total-questions').textContent = questions.length;
         document.getElementById('participant-question-text').textContent = question.question;
@@ -1039,26 +1040,26 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
         console.log('Starting participant timer');
         startTimer(config.timerDuration, 'participant-timer', () => {
             console.log('Participant timer finished');
-            
+
             // Time's up - disable options if not already disabled
             optionsContainer.querySelectorAll('.answer-option').forEach(opt => {
                 opt.style.pointerEvents = 'none';
                 opt.style.opacity = '1'; // Restore full opacity for final reveal
             });
-            
+
             const feedbackDiv = document.getElementById('participant-feedback');
-            
+
             // Check if user submitted an answer
             if (window.submittedAnswer) {
                 const { answerIndex, isCorrect } = window.submittedAnswer;
-                
+
                 // Show colors on the selected option
                 document.querySelectorAll('#participant-options .answer-option').forEach(opt => {
                     if (opt.classList.contains('selected')) {
                         opt.classList.add(isCorrect ? 'correct' : 'incorrect');
                     }
                 });
-                
+
                 // Show feedback with user's result
                 feedbackDiv.innerHTML = `
                     <div style="text-align: center; padding: 1rem;">
@@ -1066,7 +1067,7 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
                         <p>The correct answer was: <strong>${questions[currentQuestionIndex].options[questions[currentQuestionIndex].correct]}</strong></p>
                     </div>
                 `;
-                
+
                 // Clear the stored answer
                 window.submittedAnswer = null;
             } else {
@@ -1079,7 +1080,7 @@ function showParticipantQuestion(questionIndex, currentQuestionData = null) {
                 `;
                 showElement('participant-feedback');
             }
-            
+
             showToast('Time\'s up!', 'warning');
         });
     } else {
@@ -1276,11 +1277,11 @@ screens.questions = document.getElementById('questions-screen');
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     console.log('App initializing...');
-    
+
     // Check for quiz parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
     const quizId = urlParams.get('quiz');
-    
+
     if (quizId) {
         // Auto-join quiz if URL parameter is present
         console.log('Auto-joining quiz:', quizId);
@@ -1288,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         showScreen('home');
     }
-    
+
     // Load questions on app start
     console.log('Loading initial questions...');
     loadQuestionsFromFirebase().then(() => {
@@ -1307,18 +1308,18 @@ document.addEventListener('DOMContentLoaded', () => {
 // Copy link functionality
 document.getElementById('copy-link-btn').addEventListener('click', () => {
     const shareUrl = document.getElementById('quiz-share-url').textContent;
-    
+
     if (navigator.clipboard && window.isSecureContext) {
         // Use modern clipboard API
         navigator.clipboard.writeText(shareUrl).then(() => {
             showToast('Quiz link copied to clipboard!', 'success', 'Link Copied');
-            
+
             // Visual feedback
             const btn = document.getElementById('copy-link-btn');
             const originalText = btn.textContent;
             btn.textContent = '✅ Copied!';
             btn.style.background = '#28a745';
-            
+
             setTimeout(() => {
                 btn.textContent = originalText;
                 btn.style.background = '';
@@ -1341,11 +1342,11 @@ function fallbackCopyTextToClipboard(text) {
     textArea.style.left = "0";
     textArea.style.position = "fixed";
     textArea.style.opacity = "0";
-    
+
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-    
+
     try {
         const successful = document.execCommand('copy');
         if (successful) {
@@ -1357,7 +1358,7 @@ function fallbackCopyTextToClipboard(text) {
         console.error('Fallback: Could not copy text: ', err);
         showToast('Failed to copy link. Please copy it manually.', 'error', 'Copy Failed');
     }
-    
+
     document.body.removeChild(textArea);
 }
 
@@ -1367,26 +1368,26 @@ function loadMyQuizzes() {
 
     const myQuizzesList = document.getElementById('my-quizzes-list');
     myQuizzesList.innerHTML = '<div class="loading-message">Loading your quizzes...</div>';
-    
+
     // Query sessions created by the current user
     database.ref('sessions').orderByChild('hostId').equalTo(authenticatedUser.uid).once('value').then(snapshot => {
         const sessions = snapshot.val();
         myQuizzesList.innerHTML = '';
-        
+
         if (!sessions) {
             myQuizzesList.innerHTML = '<div class="no-quizzes-message">You haven\'t created any quizzes yet. Create your first quiz!</div>';
             return;
         }
-        
+
         const userQuizzes = Object.keys(sessions)
             .map(sessionId => ({ id: sessionId, ...sessions[sessionId] }))
             .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // Sort by creation time, newest first
-        
+
         if (userQuizzes.length === 0) {
             myQuizzesList.innerHTML = '<div class="no-quizzes-message">You haven\'t created any quizzes yet. Create your first quiz!</div>';
             return;
         }
-        
+
         userQuizzes.forEach(session => {
             const quizItem = createMyQuizItem(session.id, session);
             myQuizzesList.appendChild(quizItem);
@@ -1400,24 +1401,24 @@ function loadMyQuizzes() {
 function createMyQuizItem(sessionId, session) {
     const quizItem = document.createElement('div');
     quizItem.className = 'quiz-item my-quiz';
-    
+
     const participantCount = session.participants ? Object.keys(session.participants).length : 0;
     const questionCount = session.questions ? session.questions.length : 0;
-    
+
     const statusClass = {
         'waiting': 'status-waiting',
         'active': 'status-active',
         'completed': 'status-completed'
     }[session.status] || 'status-waiting';
-    
+
     const statusText = {
         'waiting': 'Waiting for participants',
         'active': 'Quiz in progress',
         'completed': 'Completed'
     }[session.status] || 'Unknown';
-    
+
     const createdDate = session.createdAt ? new Date(session.createdAt).toLocaleDateString() : 'Unknown';
-    
+
     quizItem.innerHTML = `
         <div class="quiz-title">My Quiz - ${createdDate}</div>
         <div class="quiz-details">
@@ -1425,14 +1426,14 @@ function createMyQuizItem(sessionId, session) {
             <span class="quiz-status ${statusClass}">${statusText}</span>
         </div>
         <div class="quiz-actions">
-            ${session.status !== 'completed' ? 
-                `<button class="resume-btn" onclick="resumeQuiz('${sessionId}')">Resume Quiz</button>` : 
-                `<button class="resume-btn" onclick="viewQuizResults('${sessionId}')">View Results</button>`
-            }
+            ${session.status !== 'completed' ?
+            `<button class="resume-btn" onclick="resumeQuiz('${sessionId}')">Resume Quiz</button>` :
+            `<button class="resume-btn" onclick="viewQuizResults('${sessionId}')">View Results</button>`
+        }
             <button class="delete-btn" onclick="deleteMyQuiz('${sessionId}')">Delete</button>
         </div>
     `;
-    
+
     return quizItem;
 }
 
@@ -1446,23 +1447,23 @@ function resumeQuiz(sessionId) {
                 currentSession = sessionId;
                 currentUser = authenticatedUser.displayName || authenticatedUser.email;
                 userRole = 'host';
-                
+
                 // Load questions from session
                 if (session.questions) {
                     questions = session.questions;
                 } else if (session.questionsArray) {
                     questions = session.questionsArray;
                 }
-                
+
                 document.getElementById('session-code').textContent = sessionId;
-                
+
                 // Generate and display share link
                 const shareUrl = `${window.location.origin}${window.location.pathname}?quiz=${sessionId}`;
                 document.getElementById('quiz-share-url').textContent = shareUrl;
-                
+
                 showScreen('hostDashboard');
                 setupHostListeners();
-                
+
                 if (session.status === 'active' && session.currentQuestion >= 0) {
                     // Quiz is in progress, show current question
                     currentQuestionIndex = session.currentQuestion;
@@ -1474,7 +1475,7 @@ function resumeQuiz(sessionId) {
                     showElement('waiting-room');
                     hideElement('question-display');
                 }
-                
+
                 showToast(`Resumed quiz session: ${sessionId}`, 'success', 'Quiz Resumed');
             } else {
                 showToast('You don\'t have permission to resume this quiz.', 'error', 'Access Denied');
@@ -1509,6 +1510,149 @@ function deleteMyQuiz(sessionId) {
 }
 
 function hideMyQuizzes() {
-    const myQuizzesSection = document.getElementById('my-quizzes-section');
-    myQuizzesSection.classList.add('hidden');
+    // My Quizzes are now handled by the tab system
+    // This function is kept for compatibility but doesn't need to do anything
+    // The tab system will handle showing/hiding based on authentication state
 }
+
+// Tab System Functions
+function initializeTabs() {
+    const myQuizzesTab = document.getElementById('my-quizzes-tab');
+    const availableQuizzesTab = document.getElementById('available-quizzes-tab');
+
+    myQuizzesTab.addEventListener('click', () => switchTab('my-quizzes'));
+    availableQuizzesTab.addEventListener('click', () => switchTab('available-quizzes'));
+
+    // Set initial tab based on authentication state
+    updateTabsForAuthState();
+}
+
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+
+    if (tabName === 'my-quizzes') {
+        document.getElementById('my-quizzes-tab').classList.add('active');
+        document.getElementById('my-quizzes-content').classList.add('active');
+
+        // Load my quizzes if authenticated
+        if (authenticatedUser) {
+            loadMyQuizzes();
+        }
+    } else if (tabName === 'available-quizzes') {
+        document.getElementById('available-quizzes-tab').classList.add('active');
+        document.getElementById('available-quizzes-content').classList.add('active');
+
+        // Load available quizzes
+        loadAvailableQuizzes();
+    }
+}
+
+function updateTabsForAuthState() {
+    const myQuizzesTab = document.getElementById('my-quizzes-tab');
+    const availableQuizzesTab = document.getElementById('available-quizzes-tab');
+
+    if (authenticatedUser) {
+        // User is signed in - enable My Quizzes tab
+        myQuizzesTab.classList.remove('disabled');
+        myQuizzesTab.textContent = 'My Quizzes';
+
+        // Default to My Quizzes tab for authenticated users
+        switchTab('my-quizzes');
+    } else {
+        // User is not signed in - disable My Quizzes tab
+        myQuizzesTab.classList.add('disabled');
+        myQuizzesTab.textContent = 'My Quizzes';
+
+        // Default to Available Quizzes tab for guests
+        switchTab('available-quizzes');
+    }
+}
+
+// Enhanced Create Screen Functions
+function updateQuestionCount() {
+    const questionCountElement = document.getElementById('question-count');
+    if (questionCountElement && questions) {
+        questionCountElement.textContent = questions.length;
+        
+        // Add animation when count changes
+        questionCountElement.style.transform = 'scale(1.2)';
+        questionCountElement.style.color = '#10B981';
+        
+        setTimeout(() => {
+            questionCountElement.style.transform = 'scale(1)';
+            questionCountElement.style.color = '#06B6D4';
+        }, 300);
+    }
+}
+
+// Update question count when questions are loaded
+function loadQuestionsFromFirebase() {
+    console.log('Loading questions from Firebase...');
+    return database.ref('questions').once('value').then(snapshot => {
+        const firebaseQuestions = snapshot.val();
+        console.log('Firebase questions raw data:', firebaseQuestions);
+        if (firebaseQuestions) {
+            questions = Object.values(firebaseQuestions);
+            console.log('Loaded questions from Firebase:', questions.length);
+            updateQuestionCount();
+            return questions;
+        } else {
+            // No questions in Firebase, use defaults
+            console.log('No questions in Firebase, using defaults');
+            questions = [...defaultQuestions];
+            console.log('Loaded default questions:', questions.length);
+            updateQuestionCount();
+            return questions;
+        }
+    }).catch(error => {
+        console.error('Error loading questions from Firebase:', error);
+        // Fallback to defaults on error
+        questions = [...defaultQuestions];
+        console.log('Error fallback - using default questions:', questions.length);
+        updateQuestionCount();
+        return questions;
+    });
+}
+
+// Enhanced input animations
+function initializeCreateScreenAnimations() {
+    const hostNameInput = document.getElementById('host-name-input');
+    
+    if (hostNameInput) {
+        // Add typing animation effect
+        hostNameInput.addEventListener('input', function() {
+            const inputGroup = this.parentElement;
+            if (this.value.length > 0) {
+                inputGroup.classList.add('has-content');
+            } else {
+                inputGroup.classList.remove('has-content');
+            }
+        });
+        
+        // Add focus animations
+        hostNameInput.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        
+        hostNameInput.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    }
+}
+
+// Initialize create screen enhancements when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCreateScreenAnimations();
+    
+    // Update question count when navigating to create screen
+    const createQuizBtn = document.getElementById('create-quiz-btn');
+    if (createQuizBtn) {
+        createQuizBtn.addEventListener('click', () => {
+            setTimeout(() => {
+                updateQuestionCount();
+            }, 100);
+        });
+    }
+});
