@@ -7,7 +7,9 @@
     <title>Quiz Master - Slido Clone</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -17,7 +19,7 @@
         <div id="home-screen" class="screen active">
             <div class="container">
                 <h1>Quiz Master</h1>
-                
+
                 <!-- Authentication Section -->
                 <div id="auth-section" class="auth-section">
                     <div id="signed-out-view" class="auth-view">
@@ -34,7 +36,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="signed-in-view" class="auth-view hidden">
                         <div class="user-info">
                             <div class="user-avatar">
@@ -52,22 +54,33 @@
 
                 <div class="home-options">
                     <button id="create-quiz-btn" class="btn primary">Create Quiz</button>
-                    
-                    <!-- My Quizzes Section (only visible when signed in) -->
-                    <div id="my-quizzes-section" class="my-quizzes-section hidden">
-                        <h3>My Quizzes</h3>
-                        <div id="my-quizzes-list" class="quiz-list">
-                            <div class="loading-message">Loading your quizzes...</div>
+
+                    <!-- Quiz Tabs Section -->
+                    <div class="quiz-tabs-section">
+                        <!-- Tab Navigation -->
+                        <div class="tab-navigation">
+                            <button id="my-quizzes-tab" class="tab-btn active">My Quizzes</button>
+                            <button id="available-quizzes-tab" class="tab-btn">Available Quizzes</button>
                         </div>
-                        <button id="refresh-my-quizzes-btn" class="btn secondary">🔄 Refresh My Quizzes</button>
-                    </div>
-                    
-                    <div class="join-section">
-                        <h3>Available Quizzes</h3>
-                        <div id="available-quizzes" class="quiz-list">
-                            <div class="loading-message">Loading available quizzes...</div>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content">
+                            <!-- My Quizzes Tab -->
+                            <div id="my-quizzes-content" class="tab-panel active">
+                                <div id="my-quizzes-list" class="quiz-list">
+                                    <div class="loading-message">Loading your quizzes...</div>
+                                </div>
+                                <button id="refresh-my-quizzes-btn" class="btn secondary">🔄 Refresh My Quizzes</button>
+                            </div>
+
+                            <!-- Available Quizzes Tab -->
+                            <div id="available-quizzes-content" class="tab-panel">
+                                <div id="available-quizzes" class="quiz-list">
+                                    <div class="loading-message">Loading available quizzes...</div>
+                                </div>
+                                <button id="refresh-quizzes-btn" class="btn secondary">🔄 Refresh</button>
+                            </div>
                         </div>
-                        <button id="refresh-quizzes-btn" class="btn secondary">🔄 Refresh</button>
                     </div>
                     <div class="memory-bank-access">
                         <a href="memory-bank/index.html" class="btn tertiary">🧠 Memory Bank</a>
@@ -78,13 +91,81 @@
 
         <!-- Create Quiz Screen -->
         <div id="create-screen" class="screen">
-            <div class="container">
-                <h2>Create Quiz Session</h2>
-                <input type="text" id="host-name-input" placeholder="Your Name" required>
-                <div class="quiz-options">
-                    <button id="start-quiz-btn" class="btn primary">Start Quiz</button>
-                    <button id="manage-questions-btn" class="btn secondary">Manage Questions</button>
-                    <button id="back-to-home-btn" class="btn secondary">Back</button>
+            <div class="container create-quiz-container">
+                <div class="create-quiz-header">
+                    <div class="header-icon">🎯</div>
+                    <h2>Create Quiz Session</h2>
+                    <p class="header-subtitle">Set up your interactive quiz experience</p>
+                </div>
+
+                <div class="create-quiz-form">
+                    <div class="form-section">
+                        <div class="input-group">
+                            <div class="input-icon">👤</div>
+                            <input type="text" id="host-name-input" placeholder="Enter your name as quiz host" required>
+                            <div class="input-highlight"></div>
+                        </div>
+                    </div>
+
+                    <div class="quiz-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">❓</div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="question-count">10</span>
+                                <span class="stat-label">Questions Ready</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-info">
+                                <span class="stat-number">20s</span>
+                                <span class="stat-label">Per Question</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🏆</div>
+                            <div class="stat-info">
+                                <span class="stat-number">∞</span>
+                                <span class="stat-label">Participants</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quiz-actions">
+                        <button id="start-quiz-btn" class="btn primary enhanced">
+                            <span class="btn-icon">🚀</span>
+                            <span class="btn-text">Start Quiz</span>
+                            <div class="btn-glow"></div>
+                        </button>
+
+                        <div class="secondary-actions">
+                            <button id="manage-questions-btn" class="btn secondary enhanced">
+                                <span class="btn-icon">⚙️</span>
+                                <span class="btn-text">Manage Questions</span>
+                            </button>
+                            <button id="back-to-home-btn" class="btn tertiary enhanced">
+                                <span class="btn-icon">←</span>
+                                <span class="btn-text">Back to Home</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="create-quiz-footer">
+                    <div class="feature-highlights">
+                        <div class="feature">
+                            <span class="feature-icon">⚡</span>
+                            <span>Real-time Updates</span>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">📱</span>
+                            <span>Mobile Friendly</span>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">🔗</span>
+                            <span>Easy Sharing</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -93,19 +174,19 @@
         <div id="questions-screen" class="screen">
             <div class="container">
                 <h2>Manage Questions</h2>
-                
+
                 <div class="section">
                     <h3>Add New Question</h3>
                     <div class="question-form">
                         <textarea id="new-question-text" placeholder="Enter your question..." rows="3"></textarea>
-                        
+
                         <div class="options-input">
                             <input type="text" id="option-a" placeholder="Option A" required>
                             <input type="text" id="option-b" placeholder="Option B" required>
                             <input type="text" id="option-c" placeholder="Option C" required>
                             <input type="text" id="option-d" placeholder="Option D" required>
                         </div>
-                        
+
                         <div class="correct-answer">
                             <label>Correct Answer:</label>
                             <select id="correct-option">
@@ -115,7 +196,7 @@
                                 <option value="3">D</option>
                             </select>
                         </div>
-                        
+
                         <button id="add-question-btn" class="btn primary">Add Question</button>
                     </div>
                 </div>
@@ -167,7 +248,8 @@
 
                 <div id="question-display" class="section hidden">
                     <div class="question-header">
-                        <span>Question <span id="current-question-num">1</span> of <span id="total-questions">10</span></span>
+                        <span>Question <span id="current-question-num">1</span> of <span
+                                id="total-questions">10</span></span>
                         <div class="timer">
                             <span id="timer-display">20</span>s
                         </div>
@@ -204,7 +286,8 @@
 
                 <div id="participant-question" class="section hidden">
                     <div class="question-header">
-                        <span>Question <span id="participant-question-num">1</span> of <span id="participant-total-questions">10</span></span>
+                        <span>Question <span id="participant-question-num">1</span> of <span
+                                id="participant-total-questions">10</span></span>
                         <div class="timer">
                             <span id="participant-timer">20</span>s
                         </div>
@@ -217,7 +300,8 @@
                 <div id="participant-results" class="section hidden">
                     <h3>Quiz Complete!</h3>
                     <div class="score-display">
-                        <p>Your Score: <span id="participant-score">0</span>/<span id="participant-final-total">10</span></p>
+                        <p>Your Score: <span id="participant-score">0</span>/<span
+                                id="participant-final-total">10</span></p>
                         <p>Your Rank: <span id="participant-rank">-</span></p>
                     </div>
                     <div id="participant-leaderboard"></div>
@@ -249,7 +333,8 @@
                     </div>
                     <div class="form-toggle">
                         <p>Don't have an account? <a href="#" id="toggle-signup">Create one</a></p>
-                        <p id="signup-text" class="hidden">Already have an account? <a href="#" id="toggle-signin">Sign in</a></p>
+                        <p id="signup-text" class="hidden">Already have an account? <a href="#" id="toggle-signin">Sign
+                                in</a></p>
                     </div>
                 </div>
             </div>
@@ -263,10 +348,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    
+
     <!-- Environment variables loader -->
     <script src="env-loader.js"></script>
-    
+
     <!-- Main application -->
     <script src="app.js"></script>
 </body>
