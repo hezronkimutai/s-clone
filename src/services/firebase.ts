@@ -77,3 +77,32 @@ export const loadDefaultQuestionsToFirebase = async (defaultQuestions: Question[
     );
     await Promise.all(promises);
 };
+
+export const saveQuestionsToFirebase = async (questions: Question[]): Promise<void> => {
+    // Clear existing questions first
+    await remove(ref(database, 'questions'));
+    
+    // Add all questions
+    const promises = questions.map(question => 
+        push(ref(database, 'questions'), question)
+    );
+    await Promise.all(promises);
+};
+
+export const listenToSession = (sessionCode: string, callback: (data: any) => void) => {
+    // This will be implemented with Firebase onValue listener
+    // For now, return a placeholder unsubscribe function
+    return () => {};
+};
+
+export const updateSessionQuestion = async (sessionCode: string, questionIndex: number, isActive: boolean): Promise<void> => {
+    const updates = {
+        currentQuestion: questionIndex,
+        questionActive: isActive
+    };
+    await set(ref(database, `sessions/${sessionCode}`), updates);
+};
+
+export const endSession = async (sessionCode: string): Promise<void> => {
+    await set(ref(database, `sessions/${sessionCode}/status`), 'completed');
+};

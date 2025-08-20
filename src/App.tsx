@@ -4,6 +4,8 @@ import { AppProvider } from './context/AppContext';
 import HomeScreen from './components/HomeScreen/HomeScreen';
 import CreateQuizScreen from './components/CreateQuizScreen/CreateQuizScreen';
 import JoinQuizScreen from './components/JoinQuizScreen/JoinQuizScreen';
+import HostDashboard from './components/HostDashboard/HostDashboard';
+import QuestionsManager from './components/QuestionsManager/QuestionsManager';
 import ToastContainer from './components/ToastContainer/ToastContainer';
 import './App.css';
 
@@ -16,7 +18,8 @@ function App() {
             <Route path="/" element={<HomeScreen />} />
             <Route path="/create" element={<CreateQuizScreen />} />
             <Route path="/join" element={<JoinQuizScreen />} />
-            {/* Add more routes here as we create more components */}
+            <Route path="/host/:sessionCode" element={<HostDashboard />} />
+            <Route path="/questions" element={<QuestionsManager />} />
           </Routes>
           <ToastContainer />
         </div>
