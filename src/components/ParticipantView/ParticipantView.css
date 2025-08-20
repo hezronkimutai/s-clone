@@ -1,0 +1,247 @@
+.participant-view {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.participant-view .container {
+  max-width: 800px;
+  margin: 0 auto;
+  color: white;
+}
+
+.participant-header {
+  text-align: center;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.participant-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 2rem;
+  color: white;
+}
+
+.participant-header span {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+}
+
+.section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.participant-waiting {
+  text-align: center;
+}
+
+.participant-waiting h3 {
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.participant-waiting p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.participant-waiting strong {
+  color: #FFD700;
+  font-family: monospace;
+  font-size: 1.3rem;
+  background: #333;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.participant-question .question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.question-header span {
+  font-weight: bold;
+  color: #555;
+}
+
+.timer {
+  background: #ff6b6b;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.participant-question h3 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.3rem;
+  line-height: 1.4;
+}
+
+.participant-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.option-btn {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #333;
+}
+
+.option-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #007bff;
+  transform: translateY(-1px);
+}
+
+.option-btn.selected {
+  background: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.option-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.participant-feedback {
+  text-align: center;
+  padding: 15px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+  color: #155724;
+}
+
+.participant-results {
+  text-align: center;
+}
+
+.participant-results h3 {
+  margin-bottom: 20px;
+  color: #555;
+}
+
+.score-display {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.score-display p {
+  margin: 8px 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.score-display span {
+  font-weight: bold;
+  color: #007bff;
+}
+
+@media (max-width: 768px) {
+  .participant-view {
+    padding: 10px;
+  }
+  
+  .participant-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .section {
+    padding: 20px;
+  }
+}
+
+/* Leaderboard styles */
+.participant-leaderboard h4 {
+  margin-bottom: 15px;
+  color: #555;
+  font-size: 1.3rem;
+}
+
+.leaderboard-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.leaderboard-item.current-user {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+}
+
+.leaderboard-item.rank-1 {
+  background: linear-gradient(135deg, #ffd700, #ffed4a);
+  color: #333;
+  font-weight: bold;
+}
+
+.leaderboard-item.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0, #e2e8f0);
+  color: #333;
+  font-weight: bold;
+}
+
+.leaderboard-item.rank-3 {
+  background: linear-gradient(135deg, #cd7f32, #d4a574);
+  color: #333;
+  font-weight: bold;
+}
+
+.rank-badge {
+  background: #333;
+  color: white;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.leaderboard-item.rank-1 .rank-badge {
+  background: #ff6b35;
+}
+
+.leaderboard-item.rank-2 .rank-badge {
+  background: #6c757d;
+}
+
+.leaderboard-item.rank-3 .rank-badge {
+  background: #8b4513;
+}

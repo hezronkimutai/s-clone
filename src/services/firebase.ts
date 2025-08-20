@@ -52,15 +52,24 @@ export const joinSession = async (sessionCode: string, participantName: string):
 };
 
 export const loadQuestionsFromFirebase = async (): Promise<Question[]> => {
-    const snapshot = await get(ref(database, 'questions'));
-    if (snapshot.exists()) {
-        const questionsData = snapshot.val();
-        return Object.keys(questionsData).map(id => ({
-            id,
-            ...questionsData[id]
-        }));
+    try {
+        const snapshot = await get(ref(database, 'questions'));
+        if (snapshot.exists()) {
+            const questionsData = snapshot.val();
+            const questions = Object.keys(questionsData).map(id => ({
+                id,
+                ...questionsData[id]
+            }));
+            console.log('Loaded questions from Firebase:', questions.length);
+            return questions;
+        } else {
+            console.log('No questions in Firebase, returning empty array');
+            return [];
+        }
+    } catch (error) {
+        console.error('Error loading questions from Firebase:', error);
+        return []; // Return empty array on error, let caller handle fallback
     }
-    return [];
 };
 
 export const saveQuestionToFirebase = async (questionData: Omit<Question, 'id'>): Promise<void> => {
@@ -69,6 +78,20 @@ export const saveQuestionToFirebase = async (questionData: Omit<Question, 'id'>)
 
 export const deleteQuestionFromFirebase = async (questionId: string): Promise<void> => {
     await remove(ref(database, 'questions/' + questionId));
+};
+
+export const getSessionData = async (sessionCode: string): Promise<any> => {
+    try {
+        const snapshot = await get(ref(database, 'sessions/' + sessionCode));
+        if (snapshot.exists()) {
+            return snapshot.val();
+        } else {
+            throw new Error('Session not found');
+        }
+    } catch (error) {
+        console.error('Error getting session data:', error);
+        throw error;
+    }
 };
 
 export const loadDefaultQuestionsToFirebase = async (defaultQuestions: Question[]): Promise<void> => {

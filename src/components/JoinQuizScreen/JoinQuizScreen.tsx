@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { joinSession } from '../../services/firebase';
 import './JoinQuizScreen.css';
@@ -7,9 +7,18 @@ import './JoinQuizScreen.css';
 const JoinQuizScreen: React.FC = () => {
   const { dispatch } = useAppContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [sessionCode, setSessionCode] = useState('');
   const [participantName, setParticipantName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Auto-populate session code if provided in URL
+    const quizParam = searchParams.get('quiz');
+    if (quizParam) {
+      setSessionCode(quizParam.toUpperCase());
+    }
+  }, [searchParams]);
 
   const handleJoinQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +40,7 @@ const JoinQuizScreen: React.FC = () => {
       
       // Navigate to participant view
       navigate(`/participant/${sessionCode.toUpperCase()}`, { 
-        state: { participantId, participantName: participantName.trim() } 
+        state: { participantId, participantName: participantName.trim() }
       });
       
     } catch (error: any) {

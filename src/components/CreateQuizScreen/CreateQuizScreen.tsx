@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { createSession, generateSessionCode, loadQuestionsFromFirebase } from '../../services/firebase';
+import { createSession, generateSessionCode, loadQuestionsFromFirebase, loadDefaultQuestionsToFirebase } from '../../services/firebase';
+import { defaultQuestions } from '../../data/constants';
 import './CreateQuizScreen.css';
 
 const CreateQuizScreen: React.FC = () => {
@@ -11,18 +12,58 @@ const CreateQuizScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Load questions if not already loaded
+    // Load questions if not already loaded (like backup approach)
     if (state.questions.length === 0) {
-      loadQuestionsFromFirebase()
-        .then(questions => {
+      const loadQuestions = async () => {
+        try {
+          let questions = await loadQuestionsFromFirebase();
+          
+          // If no questions exist in Firebase, load and save defaults
+          if (questions.length === 0) {
+            console.log('No questions found in Firebase, loading default questions...');
+            questions = defaultQuestions; // Use defaults immediately
+            try {
+              await loadDefaultQuestionsToFirebase(defaultQuestions);
+              (window as any).showToast?.('Default questions loaded successfully!', 'success');
+            } catch (firebaseError) {
+              console.warn('Could not save defaults to Firebase, using local:', firebaseError);
+              (window as any).showToast?.('Using local questions (Firebase unavailable)', 'warning');
+            }
+          }
+          
           dispatch({ type: 'SET_QUESTIONS', payload: questions });
-        })
-        .catch(error => {
+        } catch (error) {
           console.error('Error loading questions:', error);
-          (window as any).showToast?.('Failed to load questions. Please try again.', 'error');
-        });
+          // Always fallback to local default questions like backup
+          dispatch({ type: 'SET_QUESTIONS', payload: defaultQuestions });
+          (window as any).showToast?.('Using local questions (Firebase unavailable)', 'warning');
+        }
+      };
+      
+      loadQuestions();
     }
   }, [state.questions.length, dispatch]);
+
+  const handleLoadDefaultQuestions = async () => {
+    setIsLoading(true);
+    try {
+      // Use defaults immediately (like backup)
+      dispatch({ type: 'SET_QUESTIONS', payload: defaultQuestions });
+      (window as any).showToast?.('Default questions loaded!', 'success');
+      
+      // Try to save to Firebase in background
+      try {
+        await loadDefaultQuestionsToFirebase(defaultQuestions);
+      } catch (firebaseError) {
+        console.warn('Could not save to Firebase:', firebaseError);
+      }
+    } catch (error) {
+      console.error('Error loading default questions:', error);
+      (window as any).showToast?.('Error loading questions', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,12 +180,21 @@ const CreateQuizScreen: React.FC = () => {
               <div className="warning-content">
                 <h3>No Questions Available</h3>
                 <p>You need to add questions before creating a quiz session.</p>
-                <button 
-                  className="btn secondary"
-                  onClick={() => navigate('/questions')}
-                >
-                  Manage Questions
-                </button>
+                <div className="warning-actions">
+                  <button 
+                    className="btn primary"
+                    onClick={handleLoadDefaultQuestions}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? '⏳ Loading...' : '📝 Load Default Questions'}
+                  </button>
+                  <button 
+                    className="btn secondary"
+                    onClick={() => navigate('/questions')}
+                  >
+                    Manage Questions
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithGoogle, signOut as firebaseSignOut, onAuthStateChange, signInWithEmail, createAccountWithEmail } from '../../services/auth';
+import { signInWithGoogle, signOut as firebaseSignOut, onAuthStateChange, signInWithEmail, createAccountWithEmail, handleRedirectResult } from '../../services/auth';
 import { User as FirebaseUser } from 'firebase/auth';
 import './HomeScreen.css';
 
@@ -18,13 +18,31 @@ const HomeScreen: React.FC = () => {
   const [emailLoading, setEmailLoading] = useState(false);
 
   useEffect(() => {
+    // Check for redirect result first
+    const checkRedirectResult = async () => {
+      try {
+        const user = await handleRedirectResult();
+        if (user) {
+          (window as any).showToast?.('Signed in successfully with Google!', 'success');
+        }
+      } catch (error: any) {
+        console.error('Redirect result error:', error);
+        (window as any).showToast?.(`Sign-in failed: ${error.message}`, 'error');
+      }
+    };
+
+    checkRedirectResult();
+
     // Listen for authentication state changes
     const unsubscribe = onAuthStateChange((user) => {
       if (user) {
         setIsSignedIn(true);
         setCurrentUser(user);
         setUserPhoto(user.photoURL);
-        (window as any).showToast?.(`Welcome back, ${user.displayName || user.email}!`, 'success');
+        // Only show welcome message if not from redirect (to avoid duplicate messages)
+        if (!window.location.href.includes('redirect')) {
+          (window as any).showToast?.(`Welcome back, ${user.displayName || user.email}!`, 'success');
+        }
       } else {
         setIsSignedIn(false);
         setCurrentUser(null);
@@ -38,12 +56,17 @@ const HomeScreen: React.FC = () => {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signInWithGoogle();
-      (window as any).showToast?.('Google sign-in successful!', 'success');
+      const user = await signInWithGoogle();
+      if (user) {
+        // Popup succeeded
+        (window as any).showToast?.(`Welcome, ${user.displayName || user.email}!`, 'success');
+        setIsLoading(false);
+      }
+      // If user is null, it means redirect was used, so don't set loading to false
+      // The redirect will handle the auth state change
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       (window as any).showToast?.(`Sign-in failed: ${error.message}`, 'error');
-    } finally {
       setIsLoading(false);
     }
   };
